@@ -1,9 +1,12 @@
 package config
 
-import "log"
-import "fmt"
-import "io/ioutil"
-import "github.com/go-yaml/yaml"
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+
+	"github.com/go-yaml/yaml"
+)
 
 type Config struct {
 	Source string
