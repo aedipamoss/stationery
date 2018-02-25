@@ -39,6 +39,7 @@ func main() {
 	files, err := ioutil.ReadDir(config.Source)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	_, err = os.Stat(config.Output)
