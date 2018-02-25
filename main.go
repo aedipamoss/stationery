@@ -72,14 +72,12 @@ func main() {
 		t, err := template.New("page").Parse(Template)
 		err = t.ExecuteTemplate(w, "Page", page)
 
-		//		err = ioutil.WriteFile(path, out, 0644)
 		if err != nil {
 			log.Fatal(err)
 		}
 		w.Flush()
 
 		fmt.Println("Wrote: ", path)
-		//fmt.Printf("File contents: %s\n", content)
 	}
 
 	fmt.Println("Done!")
