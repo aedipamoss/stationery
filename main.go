@@ -29,7 +29,7 @@ const Template = `
 </html>{{ end }}
 `
 
-func main() {
+func Stationery() {
 	config := config.Config{
 		Source: "src",
 		Output: "out",
@@ -80,4 +80,9 @@ func main() {
 	}
 
 	fmt.Println("Done!")
+}
+
+func main() {
+	Stationery()
+	os.Exit(0)
 }
