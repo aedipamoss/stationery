@@ -18,8 +18,7 @@ type Page struct {
 }
 
 const Template = `
-{{ define "Page" }}
-<html>
+{{ define "Page" }}<html>
 <head>
   <meta charset="utf-8" />
   <title>a page</title>
@@ -27,8 +26,7 @@ const Template = `
 <body>
   {{ .Content }}
 </body>
-</html>
-{{ end }}
+</html>{{ end }}
 `
 
 func main() {
