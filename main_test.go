@@ -57,6 +57,10 @@ this is my temp post!`
 	}
 
 	if !strings.Contains(string(content), "<h1>zomg</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg</h1>")
+		t.Errorf("content = %q, wanted <h1>zomg</h1>", content)
+	}
+
+	if !strings.Contains(string(content), "<title>zomg</title>") {
+		t.Errorf("expected content to have title: %q", content)
 	}
 }

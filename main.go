@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/aedipamoss/stationery/config"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
@@ -15,6 +17,7 @@ import (
 
 type Page struct {
 	Content template.HTML
+	Title   string
 }
 
 const Template = `
@@ -23,7 +26,7 @@ const Template = `
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>a page</title>
+  <title>{{ .Title }}</title>
 </head>
 <body>
   {{ .Content }}
@@ -31,6 +34,20 @@ const Template = `
 </html>
 {{ end }}
 `
+
+func findTitle(content []byte) (title string) {
+	reader := bytes.NewReader(content)
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		text := scanner.Text()
+		matched, _ := regexp.MatchString("^# [[:alpha:]]+", text)
+		if matched {
+			return string(text[2:])
+		}
+	}
+	log.Fatal("no title found")
+	return ""
+}
 
 func Stationery() {
 	config := config.Config{
@@ -70,6 +87,7 @@ func Stationery() {
 		parsed := blackfriday.Run(content)
 
 		page.Content = template.HTML(parsed[:])
+		page.Title = findTitle(content)
 
 		t, err := template.New("page").Parse(Template)
 		err = t.ExecuteTemplate(w, "Page", page)
