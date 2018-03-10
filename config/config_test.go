@@ -19,6 +19,24 @@ func TestConfigFile(t *testing.T) {
 	}
 }
 
+func TestAssets(t *testing.T) {
+	data := `
+source: path/to/src
+output: path/to/out
+assets:
+  css:
+    - site.css
+`
+	config := Config{}
+	parsed, err := parse(config, []byte(data))
+	if err != nil {
+		t.Error(err)
+	}
+	if parsed.Assets.Css != []string{"site.css"} {
+		t.Error("unable to parse CSS assets")
+	}
+}
+
 func TestParse(t *testing.T) {
 	data := `
 source: path/to/source

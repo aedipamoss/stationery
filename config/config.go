@@ -10,6 +10,10 @@ type Config struct {
 	Source   string
 	Output   string
 	Template string
+	Assets   struct {
+		Css []string
+		Js  []string
+	}
 }
 
 const ConfigFile string = ".station.yml"

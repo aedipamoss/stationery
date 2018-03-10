@@ -18,23 +18,43 @@ func TestStationery(t *testing.T) {
 	tmpConfig := `
 source: src
 output: out
-template: template.html`
+template: template.html
+assets:
+  css:
+    - style.css`
 	tmpProject, err := ioutil.TempDir("", "stationery")
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
 	tmpTemplate := `
 <html>
 <head>
 <title>{{ .Title }}</title>
+{{ template "assets" . }}
 </head>
 <body>
   {{ .Content }}
 </body>
 </html>
 `
+	tmpStyle := `
+html {
+    background: #3c3c3c;
+    color: #65cdad;
+    font-family: mono;
+}`
 
+	// setup temp assets dir
+	err = os.Mkdir(filepath.Join(tmpProject, "assets"), 0777)
 	if err != nil {
-		t.Fatalf("unable to setup temporary working dir")
+		t.Fatalf("unable to setup temp project assets dir")
 	}
-	defer os.RemoveAll(tmpProject)
+	err = os.Mkdir(filepath.Join(tmpProject, "assets", "css"), 0777)
+	if err != nil {
+		t.Fatalf("unable to setup temp project assets css dir")
+	}
 
 	// write temp config to temp project dir
 	if err = ioutil.WriteFile(filepath.Join(tmpProject, ".station.yml"), []byte(tmpConfig), 0666); err != nil {
@@ -46,8 +66,14 @@ template: template.html`
 		t.Fatalf("unable to setup temporary project template")
 	}
 
-	if _, err = os.Stat(filepath.Join(tmpProject, "src")); err != nil && os.IsNotExist(err) {
-		os.Mkdir(filepath.Join(tmpProject, "src"), 0777)
+	// write temp css asset for temp project
+	if err = ioutil.WriteFile(filepath.Join(tmpProject, "assets", "css", "style.css"), []byte(tmpStyle), 0666); err != nil {
+		t.Fatalf("unable to setup temporary project css assets")
+	}
+
+	err = os.Mkdir(filepath.Join(tmpProject, "src"), 0777)
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
 	}
 
 	tmpPost := `
