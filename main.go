@@ -35,15 +35,14 @@ func findTitle(content []byte) (title string) {
 }
 
 func Stationery() {
-	config := config.Config{
-		Source:   "src",
-		Output:   "out",
-		Template: "template.html",
+	config, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
 	}
+
 	files, err := ioutil.ReadDir(config.Source)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 
 	tmpl, err := ioutil.ReadFile(config.Template)

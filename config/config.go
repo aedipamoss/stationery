@@ -1,9 +1,7 @@
 package config
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 
 	"github.com/go-yaml/yaml"
 )
@@ -21,18 +19,18 @@ func read(ConfigFile string) (content []byte, err error) {
 	return
 }
 
-func Load() {
-	content, err := read(ConfigFile)
-	if err != nil {
-		log.Fatal("Unable to read config")
+func Load() (config Config, error error) {
+	content, error := read(ConfigFile)
+	if error != nil {
+		return config, error
 	}
 
-	config, err := parse(Config{}, content)
-	if err != nil {
-		log.Fatal("Unable to parse config")
+	config, error = parse(Config{}, content)
+	if error != nil {
+		return config, error
 	}
-	fmt.Printf("Config is %v", config)
-	return
+
+	return config, nil
 }
 
 func parse(config Config, content []byte) (parsed Config, err error) {
