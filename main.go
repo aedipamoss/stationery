@@ -20,21 +20,6 @@ type Page struct {
 	Title   string
 }
 
-const Template = `
-{{ define "Page" }}
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>{{ .Title }}</title>
-</head>
-<body>
-  {{ .Content }}
-</body>
-</html>
-{{ end }}
-`
-
 func findTitle(content []byte) (title string) {
 	reader := bytes.NewReader(content)
 	scanner := bufio.NewScanner(reader)
@@ -51,13 +36,19 @@ func findTitle(content []byte) (title string) {
 
 func Stationery() {
 	config := config.Config{
-		Source: "src",
-		Output: "out",
+		Source:   "src",
+		Output:   "out",
+		Template: "template.html",
 	}
 	files, err := ioutil.ReadDir(config.Source)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
+	}
+
+	tmpl, err := ioutil.ReadFile(config.Template)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	_, err = os.Stat(config.Output)
@@ -89,8 +80,8 @@ func Stationery() {
 		page.Content = template.HTML(parsed[:])
 		page.Title = findTitle(content)
 
-		t, err := template.New("page").Parse(Template)
-		err = t.ExecuteTemplate(w, "Page", page)
+		t, err := template.New("page").Parse(string(tmpl))
+		err = t.Execute(w, page)
 
 		if err != nil {
 			log.Fatal(err)

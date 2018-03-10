@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	Source string
-	Output string
+	Source   string
+	Output   string
+	Template string
 }
 
 const ConfigFile string = ".station.yml"

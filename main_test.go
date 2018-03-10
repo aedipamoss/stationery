@@ -17,8 +17,19 @@ func TestStationery(t *testing.T) {
 
 	tmpConfig := `
 source: src
-output: out`
+output: out
+template: template.html`
 	tmpProject, err := ioutil.TempDir("", "stationery")
+	tmpTemplate := `
+<html>
+<head>
+<title>{{ .Title }}</title>
+</head>
+<body>
+  {{ .Content }}
+</body>
+</html>
+`
 
 	if err != nil {
 		t.Fatalf("unable to setup temporary working dir")
@@ -28,6 +39,11 @@ output: out`
 	// write temp config to temp project dir
 	if err = ioutil.WriteFile(filepath.Join(tmpProject, ".station.yml"), []byte(tmpConfig), 0666); err != nil {
 		t.Fatalf("unable to setup temporary project config")
+	}
+
+	// write temp template to temp project dir
+	if err = ioutil.WriteFile(filepath.Join(tmpProject, "template.html"), []byte(tmpTemplate), 0666); err != nil {
+		t.Fatalf("unable to setup temporary project template")
 	}
 
 	if _, err = os.Stat(filepath.Join(tmpProject, "src")); err != nil && os.IsNotExist(err) {
