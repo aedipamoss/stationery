@@ -18,8 +18,72 @@ import (
 
 type Page struct {
 	Content template.HTML
-	Title   string
 	Config  config.Config
+	Data    struct {
+		Title string
+	}
+	Raw        []byte
+	SourceFile os.FileInfo
+}
+
+func (page *Page) source() string {
+	return page.Config.Source + "/" + page.SourceFile.Name()
+}
+
+func (page *Page) basename() string {
+	return filepath.Ext(page.SourceFile.Name())
+}
+
+func (page *Page) filename() string {
+	return page.SourceFile.Name()[0 : len(page.SourceFile.Name())-len(page.basename())]
+}
+
+func (page *Page) outfile() string {
+	return page.Config.Output + "/" + page.filename() + ".html"
+}
+
+func (page *Page) load() (ok bool, err error) {
+	content, err := ioutil.ReadFile(page.source())
+	if err != nil {
+		return false, err
+	}
+	page.Raw = content
+	return true, nil
+}
+
+func (page Page) Generate(tmpl []byte) (ok bool, err error) {
+	_, err = page.load()
+	if err != nil {
+		return false, err
+	}
+
+	f, err := os.Create(page.outfile())
+	if err != nil {
+		return false, err
+	}
+	w := bufio.NewWriter(f)
+
+	parsed := blackfriday.Run(page.Raw)
+
+	page.Content = template.HTML(parsed[:]) // TODO: add err checks
+	page.Data.Title = "zomg"                //findTitle(page.Raw)   // here too
+
+	t, err := template.New("page").Parse(string(tmpl))
+	if err != nil {
+		return false, err
+	}
+	_, err = t.Parse(AssetsTemplate)
+	if err != nil {
+		return false, err
+	}
+
+	err = t.Execute(w, page)
+
+	if err != nil {
+		return false, err
+	}
+	w.Flush()
+	return true, nil
 }
 
 func findTitle(content []byte) (title string) {
@@ -111,46 +175,16 @@ func Stationery() {
 	}
 
 	for _, file := range files {
-		src := config.Source + "/" + file.Name()
-		base := filepath.Ext(src)
-		name := file.Name()[0 : len(file.Name())-len(base)]
-		path := config.Output + "/" + name + ".html"
 		page := &Page{}
-		page.Config = config // pass config to page struct
+		page.Config = config
+		page.SourceFile = file
 
-		content, err := ioutil.ReadFile(src)
+		_, err := page.Generate(tmpl)
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println("Wrote: ", page)
 
-		f, err := os.Create(path)
-		if err != nil {
-			log.Fatal(err)
-		}
-		w := bufio.NewWriter(f)
-
-		parsed := blackfriday.Run(content)
-
-		page.Content = template.HTML(parsed[:]) // TODO: add err checks
-		page.Title = findTitle(content)         // here too
-
-		t, err := template.New("page").Parse(string(tmpl))
-		if err != nil {
-			log.Fatal(err)
-		}
-		_, err = t.Parse(AssetsTemplate)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = t.Execute(w, page)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-		w.Flush()
-
-		fmt.Println("Wrote: ", path)
 	}
 
 	fmt.Println("Done!")

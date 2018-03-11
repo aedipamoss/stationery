@@ -31,7 +31,7 @@ assets:
 	tmpTemplate := `
 <html>
 <head>
-<title>{{ .Title }}</title>
+<title>{{ .Data.Title }}</title>
 {{ template "assets" . }}
 </head>
 <body>
