@@ -77,6 +77,10 @@ html {
 	}
 
 	tmpPost := `
+---
+title: zomg
+---
+
 # zomg
 
 this is my temp post!`
