@@ -13,17 +13,20 @@ import (
 	"regexp"
 
 	"github.com/aedipamoss/stationery/config"
+	"github.com/go-yaml/yaml"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
 type Page struct {
-	Content template.HTML
-	Config  config.Config
-	Data    struct {
-		Title string
-	}
+	Content    template.HTML
+	Config     config.Config
+	Data       Data
 	Raw        []byte
 	SourceFile os.FileInfo
+}
+
+type Data struct {
+	Title string
 }
 
 func (page *Page) source() string {
@@ -47,8 +50,35 @@ func (page *Page) load() (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	page.Raw = content
+	data, err := parseFrontMatter(content)
+	if err != nil {
+		return false, err
+	}
+        r := regexp.MustCompile(FrontMatterRegex)
+        raw := r.ReplaceAllString(string(content), "")
+	page.Data = data
+        page.Raw = []byte(raw)
+
 	return true, nil
+}
+
+const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
+
+func parseFrontMatter(content []byte) (data Data, err error) {
+	r, err := regexp.Compile(FrontMatterRegex)
+	if err != nil {
+		return data, err
+	}
+
+	matches := r.FindAllStringSubmatch(string(content), -1)
+
+	if len(matches) > 0 && len(matches[0]) > 0 {
+		err = yaml.Unmarshal([]byte(matches[0][1]), &data)
+		if err != nil {
+			return data, err
+		}
+	}
+	return data, nil
 }
 
 func (page Page) Generate(tmpl []byte) (ok bool, err error) {
@@ -66,7 +96,6 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	parsed := blackfriday.Run(page.Raw)
 
 	page.Content = template.HTML(parsed[:]) // TODO: add err checks
-	page.Data.Title = "zomg"                //findTitle(page.Raw)   // here too
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
