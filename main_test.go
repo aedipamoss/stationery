@@ -78,7 +78,7 @@ html {
 
 	tmpPost := `
 ---
-title: zomg
+title: zomg is a thing
 ---
 
 # zomg
@@ -101,12 +101,17 @@ this is my temp post!`
 	if err != nil {
 		t.Fatalf("unable to read temporary post after parsing")
 	}
+	page := string(content)
 
-	if !strings.Contains(string(content), "<h1>zomg</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg</h1>", content)
+	if !strings.Contains(page, "<h1>zomg</h1>") {
+		t.Errorf("content = %q, wanted <h1>zomg</h1>", page)
 	}
 
-	if !strings.Contains(string(content), "<title>zomg</title>") {
-		t.Errorf("expected content to have title: %q", content)
+	if !strings.Contains(string(page), "<title>zomg is a thing</title>") {
+		t.Errorf("expected content to have title: %q", page)
+	}
+
+	if strings.Contains(string(page), "<h2>title: zomg is a thing</h2>") {
+		t.Errorf("meta-data is bleeding into content body", page)
 	}
 }
