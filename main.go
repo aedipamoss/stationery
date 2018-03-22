@@ -53,10 +53,10 @@ func (page *Page) load() (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-        r := regexp.MustCompile(FrontMatterRegex)
-        raw := r.ReplaceAllString(string(content), "")
+	r := regexp.MustCompile(FrontMatterRegex)
+	raw := r.ReplaceAllString(string(content), "")
 	page.Data = data
-        page.Raw = []byte(raw)
+	page.Raw = []byte(raw)
 
 	return true, nil
 }
