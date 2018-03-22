@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -113,20 +112,6 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	}
 	w.Flush()
 	return true, nil
-}
-
-func findTitle(content []byte) (title string) {
-	reader := bytes.NewReader(content)
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		text := scanner.Text()
-		matched, _ := regexp.MatchString("^# [[:alpha:]]+", text)
-		if matched {
-			return string(text[2:])
-		}
-	}
-	log.Fatal("no title found")
-	return ""
 }
 
 // assets expects a struct with access to the Config struct
