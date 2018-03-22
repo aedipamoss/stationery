@@ -29,7 +29,16 @@ type Data struct {
 }
 
 func (page *Page) source() string {
-	return page.Config.Source + "/" + page.SourceFile.Name()
+	file, err := os.Stat(page.Config.Source)
+	if err != nil {
+		return page.SourceFile.Name()
+	}
+
+	if file.IsDir() != true {
+		return page.SourceFile.Name()
+	} else {
+		return page.Config.Source + "/" + page.SourceFile.Name()
+	}
 }
 
 func (page *Page) basename() string {
@@ -161,13 +170,27 @@ func generateAssets(config config.Config) (ok bool, error error) {
 	return true, nil
 }
 
+func sourceDir(source string) (files []os.FileInfo, err error) {
+	file, err := os.Stat(source)
+	if err != nil {
+		return nil, err
+	}
+
+	if file.IsDir() != true {
+		return []os.FileInfo{file}, nil
+	} else {
+		files, err := ioutil.ReadDir(source)
+		return files, err
+	}
+}
+
 func Stationery() {
 	config, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	files, err := ioutil.ReadDir(config.Source)
+	files, err := sourceDir(config.Source)
 	if err != nil {
 		log.Fatal(err)
 	}
