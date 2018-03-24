@@ -9,6 +9,15 @@ import (
 	"testing"
 )
 
+func TestTimestamp(t *testing.T) {
+	page := Page{}
+	stamp := "2018-03-22"
+	expected := "[@ 2018-03-22](#2018-03-22)"
+	if expected != page.Timestamp(stamp) {
+		t.Errorf("expected %v, got %v", expected, page.Timestamp(stamp))
+	}
+}
+
 func TestStationery(t *testing.T) {
 	if os.Getenv("BE_STATIONERY") == "1" {
 		Stationery()
@@ -82,6 +91,7 @@ title: zomg is a thing
 ---
 
 # zomg
+{{ .Timestamp "2018-03-24T12:43:03" }}
 
 this is my temp post!`
 

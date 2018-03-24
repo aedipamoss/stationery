@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"html/template"
 	"io"
@@ -89,6 +90,10 @@ func parseFrontMatter(content []byte) (data Data, err error) {
 	return data, nil
 }
 
+func (page Page) Timestamp(timestamp string) string {
+	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
+}
+
 func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	_, err = page.load()
 	if err != nil {
@@ -101,15 +106,27 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	}
 	w := bufio.NewWriter(f)
 
-	parsed := blackfriday.Run(page.Raw)
+	tpl := template.New("content")
+	tpl, err = tpl.Parse(string(page.Raw))
+	if err != nil {
+		log.Fatalf("got +%v", page.Raw)
+		return false, err
+	}
 
-	page.Content = template.HTML(parsed[:]) // TODO: add err checks
+	buf := new(bytes.Buffer)
+	err = tpl.Execute(buf, page)
+	if err != nil {
+		return false, err
+	}
+
+	parsed := blackfriday.Run(buf.Bytes())
+	page.Content = template.HTML(string(parsed[:]))
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
 		return false, err
 	}
-	_, err = t.Parse(AssetsTemplate)
+	t, err = t.Parse(AssetsTemplate)
 	if err != nil {
 		return false, err
 	}
