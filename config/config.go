@@ -13,6 +13,7 @@ type Config struct {
 	Assets   struct {
 		Css []string
 		Js  []string
+                Images []string
 	}
 }
 

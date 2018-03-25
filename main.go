@@ -184,6 +184,40 @@ func generateAssets(config config.Config) (ok bool, error error) {
 			return false, err
 		}
 	}
+
+	// generate images
+	imgDir := config.Output + "/images"
+
+	_, err = os.Stat(imgDir)
+	if err != nil && os.IsNotExist(err) {
+		fmt.Printf("Making assets images output dir: %v\n", imgDir)
+		e := os.Mkdir(imgDir, 0777)
+		if e != nil {
+			return false, e
+		}
+	}
+
+	for _, file := range config.Assets.Images {
+		path := imgDir + "/" + file
+		src := "assets/images/" + file
+
+		from, err := os.Open(src)
+		if err != nil {
+			return false, err
+		}
+		defer from.Close()
+
+		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			return false, err
+		}
+		defer to.Close()
+
+		_, err = io.Copy(to, from)
+		if err != nil {
+			return false, err
+		}
+	}
 	return true, nil
 }
 
