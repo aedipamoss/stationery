@@ -59,13 +59,12 @@ func (page *Page) load() (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	data, err := parseFrontMatter(content)
+	page.Data, err = parseFrontMatter(content)
 	if err != nil {
 		return false, err
 	}
 	r := regexp.MustCompile(FrontMatterRegex)
 	raw := r.ReplaceAllString(string(content), "")
-	page.Data = data
 	page.Raw = []byte(raw)
 
 	return true, nil
@@ -94,7 +93,7 @@ func (page Page) Timestamp(timestamp string) string {
 	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
 }
 
-func (page Page) Generate(tmpl []byte) (ok bool, err error) {
+func (page Page) Generate() (ok bool, err error) {
 	_, err = page.load()
 	if err != nil {
 		return false, err
@@ -121,6 +120,11 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 
 	parsed := blackfriday.Run(buf.Bytes())
 	page.Content = template.HTML(string(parsed[:]))
+
+	tmpl, err := ioutil.ReadFile(page.Config.Template)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
@@ -157,78 +161,111 @@ func deferClose(closer io.Closer) {
 	}
 }
 
-func generateAssets(config config.Config) (ok bool, error error) {
-	// generate css
-	cssDir := config.Output + "/css"
-
-	_, err := os.Stat(cssDir)
-	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making assets css output dir: %v\n", cssDir)
-		e := os.Mkdir(cssDir, 0700)
-		if e != nil {
-			return false, e
-		}
-	}
-
-	for _, file := range config.Assets.CSS {
+func generateCSS(cssFiles []string, cssDir string) error {
+	for _, file := range cssFiles {
 		path := cssDir + "/" + file
 		src := "assets/css/" + file
 
-		from, er := os.Open(src)
-		if er != nil {
-			return false, er
+		from, err := os.Open(src)
+		if err != nil {
+			return err
 		}
 		defer deferClose(from)
 
 		to, er := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
 		if er != nil {
-			return false, er
+			return err
 		}
 		defer deferClose(to)
 
 		_, er = io.Copy(to, from)
 		if er != nil {
-			return false, er
+			return err
 		}
 	}
 
-	// generate images
-	imgDir := config.Output + "/images"
+	return nil
+}
 
-	_, err = os.Stat(imgDir)
+func setupCSSDir(output string) error {
+	_, err := os.Stat(output)
 	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making assets images output dir: %v\n", imgDir)
-		e := os.Mkdir(imgDir, 0700)
+		fmt.Printf("Making assets css output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
 		if e != nil {
-			return false, e
+			return e
 		}
 	}
 
-	for _, file := range config.Assets.Images {
+	return nil
+}
+
+func generateImages(imgFiles []string, imgDir string) error {
+	for _, file := range imgFiles {
 		path := imgDir + "/" + file
 		src := "assets/images/" + file
 
 		from, err := os.Open(src)
 		if err != nil {
-			return false, err
+			return err
 		}
 		defer deferClose(from)
 
 		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
 		if err != nil {
-			return false, err
+			return err
 		}
 		defer deferClose(to)
 
 		_, err = io.Copy(to, from)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
-	return true, nil
+
+	return nil
 }
 
-func sourceDir(source string) (files []os.FileInfo, err error) {
+func setupImgDir(output string) error {
+	_, err := os.Stat(output)
+	if err != nil && os.IsNotExist(err) {
+		fmt.Printf("Making assets images output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
+		if e != nil {
+			return e
+		}
+	}
+
+	return nil
+}
+
+func generateAssets(config config.Config) error {
+	// generate css
+	cssDir := config.Output + "/css"
+	err := setupCSSDir(cssDir)
+	if err != nil {
+		return err
+	}
+
+	err = generateCSS(config.Assets.CSS, cssDir)
+	if err != nil {
+		return err
+	}
+
+	// generate images
+	imgDir := config.Output + "/images"
+
+	err = setupImgDir(imgDir)
+	if err != nil {
+		return err
+	}
+
+	err = generateImages(config.Assets.Images, imgDir)
+
+	return err
+}
+
+func sourceFiles(source string) (files []os.FileInfo, err error) {
 	file, err := os.Stat(source)
 	if err != nil {
 		return nil, err
@@ -242,34 +279,25 @@ func sourceDir(source string) (files []os.FileInfo, err error) {
 	return files, err
 }
 
-func Stationery() {
-	config, err := config.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	files, err := sourceDir(config.Source)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl, err := ioutil.ReadFile(config.Template)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = os.Stat(config.Output)
+func setupOutputDir(output string) error {
+	_, err := os.Stat(output)
 	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making output dir: %v\n", config.Output)
-		err = os.Mkdir(config.Output, 0700)
-		if err != nil {
-			log.Fatal(err)
+		fmt.Printf("Making output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
+		if e != nil {
+			return e
 		}
 	}
 
-	_, err = generateAssets(config)
+	return nil
+}
+
+func generateFiles(config config.Config) error {
+	var err error
+
+	files, err := sourceFiles(config.Source)
 	if err != nil {
-		log.Fatal("Problem generating assets")
+		return err
 	}
 
 	for _, file := range files {
@@ -277,12 +305,35 @@ func Stationery() {
 		page.Config = config
 		page.SourceFile = file
 
-		_, err := page.Generate(tmpl)
+		_, err = page.Generate()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		fmt.Println("Wrote: ", page)
+	}
 
+	return err
+}
+
+func Stationery() {
+	config, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = setupOutputDir(config.Output)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateAssets(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateFiles(config)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("Done!")
