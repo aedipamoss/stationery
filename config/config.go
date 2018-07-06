@@ -3,7 +3,7 @@ package config
 import (
 	"io/ioutil"
 
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
@@ -11,9 +11,9 @@ type Config struct {
 	Output   string
 	Template string
 	Assets   struct {
-		Css []string
-		Js  []string
-                Images []string
+		Css    []string
+		Js     []string
+		Images []string
 	}
 }
 

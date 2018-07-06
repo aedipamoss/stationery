@@ -13,8 +13,8 @@ import (
 	"regexp"
 
 	"github.com/aedipamoss/stationery/config"
-	"github.com/go-yaml/yaml"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type Page struct {

@@ -1,0 +1,26 @@
+version: 2
+jobs:
+  test:
+    docker:
+    - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/aedipamoss/stationery
+    steps:
+    - checkout
+    - run:
+        command: make test
+  lint:
+    docker:
+    - image: supinf/gometalinter:latest
+      environment:
+        CGO_ENABLED: 0
+    working_directory: /go/src/github.com/aedipamoss/stationery
+    steps:
+    - checkout
+    - run:
+        command: make lint
+workflows:
+  version: 2
+  ci:
+    jobs:
+      - test
+      - lint

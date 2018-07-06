@@ -122,7 +122,7 @@ this is my temp post!`
 	}
 
 	if strings.Contains(string(page), "<h2>title: zomg is a thing</h2>") {
-		t.Errorf("meta-data is bleeding into content body", page)
+		t.Errorf("meta-data is bleeding into content body: %q", page)
 	}
 }
 
@@ -224,6 +224,6 @@ this is my temp post!`
 	}
 
 	if strings.Contains(string(page), "<h2>title: log of all zomg</h2>") {
-		t.Errorf("meta-data is bleeding into content body", page)
+		t.Errorf("meta-data is bleeding into content body: %q", page)
 	}
 }
