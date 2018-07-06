@@ -119,6 +119,7 @@ func (page Page) Generate() (ok bool, err error) {
 	}
 
 	parsed := blackfriday.Run(buf.Bytes())
+	// nolint: gas
 	page.Content = template.HTML(string(parsed[:]))
 
 	tmpl, err := ioutil.ReadFile(page.Config.Template)
