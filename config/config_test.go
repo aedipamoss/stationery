@@ -32,7 +32,7 @@ assets:
 	if err != nil {
 		t.Error(err)
 	}
-	if parsed.Assets.Css == nil {
+	if parsed.Assets.CSS == nil {
 		t.Error("unable to parse CSS assets")
 	}
 }

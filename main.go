@@ -35,11 +35,11 @@ func (page *Page) source() string {
 		return page.SourceFile.Name()
 	}
 
-	if file.IsDir() != true {
+	if !file.IsDir() {
 		return page.SourceFile.Name()
-	} else {
-		return page.Config.Source + "/" + page.SourceFile.Name()
 	}
+
+	return page.Config.Source + "/" + page.SourceFile.Name()
 }
 
 func (page *Page) basename() string {
@@ -136,19 +136,26 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	w.Flush()
-	return true, nil
+	err = w.Flush()
+	return true, err
 }
 
-// assets expects a struct with access to the Config struct
-// that includes "Assets.Css" fields with an array of stylesheet names
+// AssetsTemplate defines a template which utilizes the Config struct
+// including the fields "Assets.CSS" as an array of stylesheet names
 const AssetsTemplate = `
 {{ define "assets" }}
-  {{ range .Config.Assets.Css }}
+  {{ range .Config.Assets.CSS }}
     <link type="text/css" rel="stylesheet" href="css/{{ . }}">
   {{ end }}
 {{ end }}
 `
+
+func deferClose(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		panic(err)
+	}
+}
 
 func generateAssets(config config.Config) (ok bool, error error) {
 	// generate css
@@ -157,31 +164,31 @@ func generateAssets(config config.Config) (ok bool, error error) {
 	_, err := os.Stat(cssDir)
 	if err != nil && os.IsNotExist(err) {
 		fmt.Printf("Making assets css output dir: %v\n", cssDir)
-		e := os.Mkdir(cssDir, 0777)
+		e := os.Mkdir(cssDir, 0700)
 		if e != nil {
 			return false, e
 		}
 	}
 
-	for _, file := range config.Assets.Css {
+	for _, file := range config.Assets.CSS {
 		path := cssDir + "/" + file
 		src := "assets/css/" + file
 
-		from, err := os.Open(src)
-		if err != nil {
-			return false, err
+		from, er := os.Open(src)
+		if er != nil {
+			return false, er
 		}
-		defer from.Close()
+		defer deferClose(from)
 
-		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return false, err
+		to, er := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
+		if er != nil {
+			return false, er
 		}
-		defer to.Close()
+		defer deferClose(to)
 
-		_, err = io.Copy(to, from)
-		if err != nil {
-			return false, err
+		_, er = io.Copy(to, from)
+		if er != nil {
+			return false, er
 		}
 	}
 
@@ -191,7 +198,7 @@ func generateAssets(config config.Config) (ok bool, error error) {
 	_, err = os.Stat(imgDir)
 	if err != nil && os.IsNotExist(err) {
 		fmt.Printf("Making assets images output dir: %v\n", imgDir)
-		e := os.Mkdir(imgDir, 0777)
+		e := os.Mkdir(imgDir, 0700)
 		if e != nil {
 			return false, e
 		}
@@ -205,13 +212,13 @@ func generateAssets(config config.Config) (ok bool, error error) {
 		if err != nil {
 			return false, err
 		}
-		defer from.Close()
+		defer deferClose(from)
 
-		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
 		if err != nil {
 			return false, err
 		}
-		defer to.Close()
+		defer deferClose(to)
 
 		_, err = io.Copy(to, from)
 		if err != nil {
@@ -227,12 +234,12 @@ func sourceDir(source string) (files []os.FileInfo, err error) {
 		return nil, err
 	}
 
-	if file.IsDir() != true {
+	if !file.IsDir() {
 		return []os.FileInfo{file}, nil
-	} else {
-		files, err := ioutil.ReadDir(source)
-		return files, err
 	}
+
+	files, err = ioutil.ReadDir(source)
+	return files, err
 }
 
 func Stationery() {
@@ -254,7 +261,10 @@ func Stationery() {
 	_, err = os.Stat(config.Output)
 	if err != nil && os.IsNotExist(err) {
 		fmt.Printf("Making output dir: %v\n", config.Output)
-		os.Mkdir(config.Output, 0777)
+		err = os.Mkdir(config.Output, 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	_, err = generateAssets(config)
