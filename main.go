@@ -344,22 +344,22 @@ func generateFiles(config config.Config) error {
 // Stationery is the main entrypoint to this program.
 // It's the original caller from inside main() and logs any errors that occur during file generation.
 func Stationery() {
-	config, err := config.Load()
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = setupOutputDir(config.Output)
+	err = setupOutputDir(cfg.Output)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = generateAssets(config)
+	err = generateAssets(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = generateFiles(config)
+	err = generateFiles(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
