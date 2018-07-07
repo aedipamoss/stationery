@@ -13,10 +13,17 @@ import (
 	"regexp"
 
 	"github.com/aedipamoss/stationery/config"
-	"github.com/go-yaml/yaml"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
+	"gopkg.in/yaml.v2"
 )
 
+// Page contains everything needed to build a page and write it.
+// This includes the following attributes:
+//   * SourceFile: original source file
+//   * Raw: raw markdown in bytes
+//   * Data: data extracted from the file
+//   * Content: parsed content into HTML
+//   * Config: supporting config for this project
 type Page struct {
 	Content    template.HTML
 	Config     config.Config
@@ -25,6 +32,11 @@ type Page struct {
 	SourceFile os.FileInfo
 }
 
+// Data contains the extracted meta-data from the original source.
+// It's pulled from the raw content before parsing, and is then
+// parsed separately as markdown into this struct.
+//
+// Any fields you want to add to the front-matter data should go here.
 type Data struct {
 	Title string
 }
@@ -35,11 +47,11 @@ func (page *Page) source() string {
 		return page.SourceFile.Name()
 	}
 
-	if file.IsDir() != true {
+	if !file.IsDir() {
 		return page.SourceFile.Name()
-	} else {
-		return page.Config.Source + "/" + page.SourceFile.Name()
 	}
+
+	return page.Config.Source + "/" + page.SourceFile.Name()
 }
 
 func (page *Page) basename() string {
@@ -59,18 +71,23 @@ func (page *Page) load() (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	data, err := parseFrontMatter(content)
+	page.Data, err = parseFrontMatter(content)
 	if err != nil {
 		return false, err
 	}
 	r := regexp.MustCompile(FrontMatterRegex)
 	raw := r.ReplaceAllString(string(content), "")
-	page.Data = data
 	page.Raw = []byte(raw)
 
 	return true, nil
 }
 
+// FrontMatterRegex is a regular expression inspired by Jekyll.
+// They have a constant YAML_FRONT_MATTER_REGEX, which is here:
+//   https://github.com/jekyll/jekyll/blob/a944dd9/lib/jekyll/document.rb#L13
+//
+// We use this to pull out meta-data from the page content before parsing.
+// The first use-case for this was a page title.
 const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
 
 func parseFrontMatter(content []byte) (data Data, err error) {
@@ -90,11 +107,18 @@ func parseFrontMatter(content []byte) (data Data, err error) {
 	return data, nil
 }
 
+// Timestamp is a member function made available in the page template.
+// So you can write `{{ .Timestamp "2018-03-24" }}`;
+// In the resulting HTML will get an anchor tag to that timestamp.
 func (page Page) Timestamp(timestamp string) string {
 	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
 }
 
-func (page Page) Generate(tmpl []byte) (ok bool, err error) {
+// Generate does exactly what the name implies.
+//
+// Given a page this function will parse it's content from markdown to HTML,
+// including the template from config and it's assets into a file on disk.
+func (page Page) Generate() (ok bool, err error) {
 	_, err = page.load()
 	if err != nil {
 		return false, err
@@ -120,7 +144,13 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	}
 
 	parsed := blackfriday.Run(buf.Bytes())
+	// nolint: gas
 	page.Content = template.HTML(string(parsed[:]))
+
+	tmpl, err := ioutil.ReadFile(page.Config.Template)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
@@ -136,130 +166,164 @@ func (page Page) Generate(tmpl []byte) (ok bool, err error) {
 	if err != nil {
 		return false, err
 	}
-	w.Flush()
-	return true, nil
+	err = w.Flush()
+	return true, err
 }
 
-// assets expects a struct with access to the Config struct
-// that includes "Assets.Css" fields with an array of stylesheet names
+// AssetsTemplate defines a template which utilizes the Config struct
+// including the fields "Assets.CSS" as an array of stylesheet names
 const AssetsTemplate = `
 {{ define "assets" }}
-  {{ range .Config.Assets.Css }}
+  {{ range .Config.Assets.CSS }}
     <link type="text/css" rel="stylesheet" href="css/{{ . }}">
   {{ end }}
 {{ end }}
 `
 
-func generateAssets(config config.Config) (ok bool, error error) {
-	// generate css
-	cssDir := config.Output + "/css"
-
-	_, err := os.Stat(cssDir)
-	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making assets css output dir: %v\n", cssDir)
-		e := os.Mkdir(cssDir, 0777)
-		if e != nil {
-			return false, e
-		}
+func deferClose(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		panic(err)
 	}
+}
 
-	for _, file := range config.Assets.Css {
+func generateCSS(cssFiles []string, cssDir string) error {
+	for _, file := range cssFiles {
 		path := cssDir + "/" + file
 		src := "assets/css/" + file
 
 		from, err := os.Open(src)
 		if err != nil {
-			return false, err
+			return err
 		}
-		defer from.Close()
+		defer deferClose(from)
 
-		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return false, err
+		to, er := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
+		if er != nil {
+			return err
 		}
-		defer to.Close()
+		defer deferClose(to)
 
-		_, err = io.Copy(to, from)
-		if err != nil {
-			return false, err
+		_, er = io.Copy(to, from)
+		if er != nil {
+			return err
 		}
 	}
 
-	// generate images
-	imgDir := config.Output + "/images"
+	return nil
+}
 
-	_, err = os.Stat(imgDir)
+func setupCSSDir(output string) error {
+	_, err := os.Stat(output)
 	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making assets images output dir: %v\n", imgDir)
-		e := os.Mkdir(imgDir, 0777)
+		fmt.Printf("Making assets css output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
 		if e != nil {
-			return false, e
+			return e
 		}
 	}
 
-	for _, file := range config.Assets.Images {
+	return nil
+}
+
+func generateImages(imgFiles []string, imgDir string) error {
+	for _, file := range imgFiles {
 		path := imgDir + "/" + file
 		src := "assets/images/" + file
 
 		from, err := os.Open(src)
 		if err != nil {
-			return false, err
+			return err
 		}
-		defer from.Close()
+		defer deferClose(from)
 
-		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0666)
+		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
 		if err != nil {
-			return false, err
+			return err
 		}
-		defer to.Close()
+		defer deferClose(to)
 
 		_, err = io.Copy(to, from)
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
-	return true, nil
+
+	return nil
 }
 
-func sourceDir(source string) (files []os.FileInfo, err error) {
+func setupImgDir(output string) error {
+	_, err := os.Stat(output)
+	if err != nil && os.IsNotExist(err) {
+		fmt.Printf("Making assets images output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
+		if e != nil {
+			return e
+		}
+	}
+
+	return nil
+}
+
+func generateAssets(config config.Config) error {
+	// generate css
+	cssDir := config.Output + "/css"
+	err := setupCSSDir(cssDir)
+	if err != nil {
+		return err
+	}
+
+	err = generateCSS(config.Assets.CSS, cssDir)
+	if err != nil {
+		return err
+	}
+
+	// generate images
+	imgDir := config.Output + "/images"
+
+	err = setupImgDir(imgDir)
+	if err != nil {
+		return err
+	}
+
+	err = generateImages(config.Assets.Images, imgDir)
+
+	return err
+}
+
+func sourceFiles(source string) (files []os.FileInfo, err error) {
 	file, err := os.Stat(source)
 	if err != nil {
 		return nil, err
 	}
 
-	if file.IsDir() != true {
+	if !file.IsDir() {
 		return []os.FileInfo{file}, nil
-	} else {
-		files, err := ioutil.ReadDir(source)
-		return files, err
 	}
+
+	files, err = ioutil.ReadDir(source)
+	return files, err
 }
 
-func Stationery() {
-	config, err := config.Load()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	files, err := sourceDir(config.Source)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl, err := ioutil.ReadFile(config.Template)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = os.Stat(config.Output)
+func setupOutputDir(output string) error {
+	_, err := os.Stat(output)
 	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making output dir: %v\n", config.Output)
-		os.Mkdir(config.Output, 0777)
+		fmt.Printf("Making output dir: %v\n", output)
+		e := os.Mkdir(output, 0700)
+		if e != nil {
+			return e
+		}
 	}
 
-	_, err = generateAssets(config)
+	return nil
+}
+
+func generateFiles(config config.Config) error {
+	var err error
+
+	files, err := sourceFiles(config.Source)
 	if err != nil {
-		log.Fatal("Problem generating assets")
+		return err
 	}
 
 	for _, file := range files {
@@ -267,12 +331,37 @@ func Stationery() {
 		page.Config = config
 		page.SourceFile = file
 
-		_, err := page.Generate(tmpl)
+		_, err = page.Generate()
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		fmt.Println("Wrote: ", page)
+	}
 
+	return err
+}
+
+// Stationery is the main entrypoint to this program.
+// It's the original caller from inside main() and logs any errors that occur during file generation.
+func Stationery() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = setupOutputDir(cfg.Output)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateAssets(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateFiles(cfg)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	fmt.Println("Done!")
