@@ -34,6 +34,7 @@ type Data struct {
 	Title string
 }
 
+// Only used in load()
 func (page *Page) source() string {
 	file, err := os.Stat(page.Config.Source)
 	if err != nil {
@@ -47,18 +48,22 @@ func (page *Page) source() string {
 	return page.Config.Source + "/" + page.SourceFile.Name()
 }
 
+// Only used by filename()
 func (page *Page) basename() string {
 	return filepath.Ext(page.SourceFile.Name())
 }
 
+// Only used by outfile()
 func (page *Page) filename() string {
 	return page.SourceFile.Name()[0 : len(page.SourceFile.Name())-len(page.basename())]
 }
 
+// Used in Generate()
 func (page *Page) outfile() string {
 	return page.Config.Output + "/" + page.filename() + ".html"
 }
 
+// Used in Generate()
 func (page *Page) load() (ok bool, err error) {
 	content, err := ioutil.ReadFile(page.source())
 	if err != nil {
@@ -83,6 +88,7 @@ func (page *Page) load() (ok bool, err error) {
 // The first use-case for this was a page title.
 const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
 
+// Used in load()
 func parseFrontMatter(content []byte) (data Data, err error) {
 	r, err := regexp.Compile(FrontMatterRegex)
 	if err != nil {
