@@ -17,6 +17,13 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Page contains everything needed to build a page and write it.
+// This includes the following attributes:
+//   * SourceFile: original source file
+//   * Raw: raw markdown in bytes
+//   * Data: data extracted from the file
+//   * Content: parsed content into HTML
+//   * Config: supporting config for this project
 type Page struct {
 	Content    template.HTML
 	Config     config.Config
@@ -25,6 +32,11 @@ type Page struct {
 	SourceFile os.FileInfo
 }
 
+// Data contains the extracted meta-data from the original source.
+// It's pulled from the raw content before parsing, and is then
+// parsed separately as markdown into this struct.
+//
+// Any fields you want to add to the front-matter data should go here.
 type Data struct {
 	Title string
 }
@@ -70,6 +82,12 @@ func (page *Page) load() (ok bool, err error) {
 	return true, nil
 }
 
+// FrontMatterRegex is a regular expression inspired by Jekyll.
+// They have a constant YAML_FRONT_MATTER_REGEX, which is here:
+//   https://github.com/jekyll/jekyll/blob/a944dd9/lib/jekyll/document.rb#L13
+//
+// We use this to pull out meta-data from the page content before parsing.
+// The first use-case for this was a page title.
 const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
 
 func parseFrontMatter(content []byte) (data Data, err error) {
@@ -89,10 +107,17 @@ func parseFrontMatter(content []byte) (data Data, err error) {
 	return data, nil
 }
 
+// Timestamp is a member function made available in the page template.
+// So you can write `{{ .Timestamp "2018-03-24" }}`;
+// In the resulting HTML will get an anchor tag to that timestamp.
 func (page Page) Timestamp(timestamp string) string {
 	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
 }
 
+// Generate does exactly what the name implies.
+//
+// Given a page this function will parse it's content from markdown to HTML,
+// including the template from config and it's assets into a file on disk.
 func (page Page) Generate() (ok bool, err error) {
 	_, err = page.load()
 	if err != nil {
@@ -316,6 +341,8 @@ func generateFiles(config config.Config) error {
 	return err
 }
 
+// Stationery is the main entrypoint to this program.
+// It's the original caller from inside main() and logs any errors that occur during file generation.
 func Stationery() {
 	config, err := config.Load()
 	if err != nil {
