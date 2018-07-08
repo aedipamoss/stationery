@@ -48,7 +48,5 @@ func (assets *List) Generate(dest string) error {
 		return err
 	}
 
-	err = setupAndCopy(assets.Images, "images", dest)
-
-	return err
+	return setupAndCopy(assets.Images, "images", dest)
 }
