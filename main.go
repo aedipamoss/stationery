@@ -144,7 +144,7 @@ func generateFiles(config config.Config) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("Wrote: ", page)
+		fmt.Println("Wrote: ", file.Name())
 	}
 
 	return err
