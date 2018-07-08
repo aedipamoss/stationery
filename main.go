@@ -135,6 +135,11 @@ func generateFiles(config config.Config) error {
 		page.Source = source(config.Source, file)
 		page.Template = config.Template
 
+		err = page.Load()
+		if err != nil {
+			return err
+		}
+
 		err = page.Generate()
 		if err != nil {
 			return err
