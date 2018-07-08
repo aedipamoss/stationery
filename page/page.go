@@ -64,20 +64,20 @@ func (page *Page) outfile() string {
 }
 
 // Used in Generate()
-func (page *Page) load() (ok bool, err error) {
+func (page *Page) load() error {
 	content, err := ioutil.ReadFile(page.source())
 	if err != nil {
-		return false, err
+		return err
 	}
 	page.Data, err = parseFrontMatter(content)
 	if err != nil {
-		return false, err
+		return err
 	}
 	r := regexp.MustCompile(FrontMatterRegex)
 	raw := r.ReplaceAllString(string(content), "")
 	page.Raw = []byte(raw)
 
-	return true, nil
+	return err
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.
@@ -118,7 +118,7 @@ func (page Page) Timestamp(timestamp string) string {
 // Given a page this function will parse it's content from markdown to HTML,
 // including the template from config and it's assets into a file on disk.
 func (page Page) Generate() error {
-	_, err := page.load()
+	err := page.load()
 	if err != nil {
 		return err
 	}
