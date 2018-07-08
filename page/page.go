@@ -24,7 +24,7 @@ type Page struct {
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
-	Raw         []byte      // raw markdown in bytes
+	Raw         string      // raw markdown after subbing data
 	Source      string      // path to the original source file
 	Template    string      // template used for this page
 }
@@ -57,8 +57,8 @@ func (page *Page) parseFrontMatter(content []byte) error {
 		}
 	}
 
-	raw := r.ReplaceAllString(string(content), "")
-	page.Raw = []byte(raw)
+	page.Raw = r.ReplaceAllString(string(content), "")
+
 	return nil
 }
 
@@ -89,9 +89,8 @@ func (page Page) Generate() error {
 	w := bufio.NewWriter(f)
 
 	tpl := template.New("content")
-	tpl, err = tpl.Parse(string(page.Raw))
+	tpl, err = tpl.Parse(page.Raw)
 	if err != nil {
-		log.Fatalf("got +%v", page.Raw)
 		return err
 	}
 
