@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 )
 
+// Basename returns only the name of a file without any extension.
 func Basename(file os.FileInfo) string {
 	name := file.Name()
 	basename := filepath.Ext(name)
@@ -19,6 +20,7 @@ func deferClose(closer io.Closer) {
 	}
 }
 
+// CopyFiles iterates the files array and copies each one to it's destination.
 func CopyFiles(files []string, src string, dest string) error {
 	for _, file := range files {
 		path := filepath.Join(src, file)
