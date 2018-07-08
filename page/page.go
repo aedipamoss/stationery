@@ -17,33 +17,23 @@ import (
 
 // Page contains everything needed to build a page and write it.
 type Page struct {
-	Assets      *assets.List  // assets available to this page
-	Content     template.HTML // parsed content into HTML
-	Data        Data          // extracted meta-data from the file
-	Destination string        // path to write this page out to
-	FileInfo    os.FileInfo   // original source file info
-	Raw         []byte        // raw markdown in bytes
-	Source      string        // path to the original source file
-	Template    string        // template used for this page
-}
-
-// Data contains the extracted meta-data from the original source.
-// It's pulled from the raw content before parsing, and is then
-// parsed separately as markdown into this struct.
-//
-// Any fields you want to add to the front-matter data should go here.
-type Data struct {
-	Title string
-}
-
-// Used in Generate()
-func (page *Page) load() error {
-	content, err := ioutil.ReadFile(page.Source)
-	if err != nil {
-		return err
+	Assets  *assets.List  // assets available to this page
+	Content template.HTML // parsed content into HTML
+	Data    struct {      // extracted meta-data from the file
+		Title string
 	}
-	err = page.parseFrontMatter(content)
-	return err
+	Destination string      // path to write this page out to
+	FileInfo    os.FileInfo // original source file info
+	Raw         []byte      // raw markdown in bytes
+	Source      string      // path to the original source file
+	Template    string      // template used for this page
+}
+
+// Timestamp is a member function made available in the page template.
+// So you can write `{{ .Timestamp "2018-03-24" }}`;
+// In the resulting HTML will get an anchor tag to that timestamp.
+func (page Page) Timestamp(timestamp string) string {
+	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.
@@ -72,11 +62,14 @@ func (page *Page) parseFrontMatter(content []byte) error {
 	return nil
 }
 
-// Timestamp is a member function made available in the page template.
-// So you can write `{{ .Timestamp "2018-03-24" }}`;
-// In the resulting HTML will get an anchor tag to that timestamp.
-func (page Page) Timestamp(timestamp string) string {
-	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
+// Used in Generate()
+func (page *Page) load() error {
+	content, err := ioutil.ReadFile(page.Source)
+	if err != nil {
+		return err
+	}
+	err = page.parseFrontMatter(content)
+	return err
 }
 
 // Generate does exactly what the name implies.
