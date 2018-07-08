@@ -24,29 +24,31 @@ const Template = `
 {{ end }}
 `
 
+func setupAndCopy(files []string, src string, dest string) error {
+	src = filepath.Join("assets", src)
+	dest = filepath.Join(dest, src)
+	err := os.MkdirAll(dest, 0700)
+	if err != nil {
+		return err
+	}
+
+	err = fileutils.CopyFiles(files, src, dest)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Generate will copy assets from each field, CSS, Images, and JS.
 // It copies each file listed to the provided destination.
 func (assets *List) Generate(dest string) error {
-	// generate css
-	cssDir := filepath.Join(dest, "css")
-	err := os.MkdirAll(cssDir, 0700)
+	err := setupAndCopy(assets.CSS, "css", dest)
 	if err != nil {
 		return err
 	}
 
-	err = fileutils.CopyFiles(assets.CSS, cssDir, "assets/css/")
-	if err != nil {
-		return err
-	}
-
-	// generate images
-	imgDir := filepath.Join(dest, "images")
-	err = os.MkdirAll(imgDir, 0700)
-	if err != nil {
-		return err
-	}
-
-	err = fileutils.CopyFiles(assets.Images, imgDir, "assets/images/")
+	err = setupAndCopy(assets.Images, "images", dest)
 
 	return err
 }
