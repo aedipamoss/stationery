@@ -117,15 +117,15 @@ func (page Page) Timestamp(timestamp string) string {
 //
 // Given a page this function will parse it's content from markdown to HTML,
 // including the template from config and it's assets into a file on disk.
-func (page Page) Generate() (ok bool, err error) {
-	_, err = page.load()
+func (page Page) Generate() error {
+	_, err := page.load()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	f, err := os.Create(page.outfile())
 	if err != nil {
-		return false, err
+		return err
 	}
 	w := bufio.NewWriter(f)
 
@@ -133,13 +133,13 @@ func (page Page) Generate() (ok bool, err error) {
 	tpl, err = tpl.Parse(string(page.Raw))
 	if err != nil {
 		log.Fatalf("got +%v", page.Raw)
-		return false, err
+		return err
 	}
 
 	buf := new(bytes.Buffer)
 	err = tpl.Execute(buf, page)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	parsed := blackfriday.Run(buf.Bytes())
@@ -153,20 +153,20 @@ func (page Page) Generate() (ok bool, err error) {
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
-		return false, err
+		return err
 	}
 	t, err = t.Parse(AssetsTemplate)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	err = t.Execute(w, page)
 
 	if err != nil {
-		return false, err
+		return err
 	}
 	err = w.Flush()
-	return true, err
+	return err
 }
 
 // AssetsTemplate defines a template which utilizes the Config struct

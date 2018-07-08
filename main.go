@@ -109,7 +109,7 @@ func generateFiles(config config.Config) error {
 		page.Config = config
 		page.SourceFile = file
 
-		_, err = page.Generate()
+		err = page.Generate()
 		if err != nil {
 			return err
 		}
