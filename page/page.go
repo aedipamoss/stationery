@@ -36,16 +36,17 @@ type Data struct {
 
 // Only used in load()
 func (page *Page) source() string {
+	name := page.SourceFile.Name()
 	file, err := os.Stat(page.Config.Source)
 	if err != nil {
-		return page.SourceFile.Name()
+		return name
 	}
 
 	if !file.IsDir() {
-		return page.SourceFile.Name()
+		return name
 	}
 
-	return filepath.Join(page.Config.Source, page.SourceFile.Name())
+	return filepath.Join(page.Config.Source, name)
 }
 
 // Used in Generate()
