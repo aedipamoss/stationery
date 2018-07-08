@@ -25,19 +25,15 @@ const Template = `
 `
 
 func setupAndCopy(files []string, src string, dest string) error {
-	src = filepath.Join("assets", src)
-	dest = filepath.Join(dest, src)
-	err := os.MkdirAll(dest, 0700)
+	from := filepath.Join("assets", src)
+	to := filepath.Join(dest, src)
+
+	err := os.MkdirAll(to, 0700)
 	if err != nil {
 		return err
 	}
 
-	err = fileutils.CopyFiles(files, src, dest)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return fileutils.CopyFiles(files, from, to)
 }
 
 // Generate will copy assets from each field, CSS, Images, and JS.
