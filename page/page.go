@@ -45,15 +45,16 @@ func (page *Page) source() string {
 		return page.SourceFile.Name()
 	}
 
-	return page.Config.Source + "/" + page.SourceFile.Name()
+	return filepath.Join(page.Config.Source, page.SourceFile.Name())
 }
 
 // Used in Generate()
 func (page *Page) destination() string {
-	basename := filepath.Ext(page.SourceFile.Name())
-	filename := page.SourceFile.Name()[0 : len(page.SourceFile.Name())-len(basename)]
+	name := page.SourceFile.Name()
+	basename := filepath.Ext(name)
+	filename := name[0 : len(name)-len(basename)]
 
-	return page.Config.Output + "/" + filename + ".html"
+	return filepath.Join(page.Config.Output, filename+".html")
 }
 
 // Used in Generate()

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/page"
@@ -33,8 +34,8 @@ func dirExistOrMkdir(path string) error {
 
 func copyFilesToDest(files []string, src string, dest string) error {
 	for _, file := range files {
-		path := src + "/" + file
-		src := dest + file
+		path := filepath.Join(src, file)
+		src := filepath.Join(dest, file)
 
 		from, err := os.Open(src)
 		if err != nil {
@@ -59,7 +60,7 @@ func copyFilesToDest(files []string, src string, dest string) error {
 
 func generateAssets(config config.Config) error {
 	// generate css
-	cssDir := config.Output + "/css"
+	cssDir := filepath.Join(config.Output, "css")
 	err := dirExistOrMkdir(cssDir)
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func generateAssets(config config.Config) error {
 	}
 
 	// generate images
-	imgDir := config.Output + "/images"
+	imgDir := filepath.Join(config.Output, "images")
 	err = dirExistOrMkdir(imgDir)
 	if err != nil {
 		return err
