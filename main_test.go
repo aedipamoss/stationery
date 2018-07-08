@@ -11,7 +11,7 @@ import (
 
 func TestStationery(t *testing.T) {
 	if os.Getenv("BE_STATIONERY") == "1" {
-		Stationery()
+		main()
 		return
 	}
 
@@ -73,7 +73,7 @@ this is my temp post!`)
 
 func TestSingleFileSource(t *testing.T) {
 	if os.Getenv("BE_STATIONERY") == "1" {
-		Stationery()
+		main()
 		return
 	}
 
