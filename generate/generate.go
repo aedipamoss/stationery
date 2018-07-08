@@ -75,7 +75,7 @@ func generateFiles(config config.Config) error {
 }
 
 // Run is the main entrypoint to this program.
-// It's the original caller from inside main() and logs any errors that occur during file generation.
+// It's caller is main() and logs any errors that occur during file generation.
 func Run() {
 	cfg, err := config.Load()
 	if err != nil {
