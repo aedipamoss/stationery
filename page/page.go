@@ -48,19 +48,12 @@ func (page *Page) source() string {
 	return page.Config.Source + "/" + page.SourceFile.Name()
 }
 
-// Only used by filename()
-func (page *Page) basename() string {
-	return filepath.Ext(page.SourceFile.Name())
-}
-
-// Only used by outfile()
-func (page *Page) filename() string {
-	return page.SourceFile.Name()[0 : len(page.SourceFile.Name())-len(page.basename())]
-}
-
 // Used in Generate()
-func (page *Page) outfile() string {
-	return page.Config.Output + "/" + page.filename() + ".html"
+func (page *Page) destination() string {
+	basename := filepath.Ext(page.SourceFile.Name())
+	filename := page.SourceFile.Name()[0 : len(page.SourceFile.Name())-len(basename)]
+
+	return page.Config.Output + "/" + filename + ".html"
 }
 
 // Used in Generate()
@@ -123,7 +116,7 @@ func (page Page) Generate() error {
 		return err
 	}
 
-	f, err := os.Create(page.outfile())
+	f, err := os.Create(page.destination())
 	if err != nil {
 		return err
 	}
