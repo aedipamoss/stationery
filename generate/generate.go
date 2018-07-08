@@ -2,86 +2,15 @@ package generate
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/aedipamoss/stationery/config"
+	"github.com/aedipamoss/stationery/fileutils"
 	"github.com/aedipamoss/stationery/page"
 )
-
-func deferClose(closer io.Closer) {
-	err := closer.Close()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func dirExistOrMkdir(path string) error {
-	_, err := os.Stat(path)
-	if err != nil && os.IsNotExist(err) {
-		fmt.Printf("Making dir: %v\n", path)
-		e := os.Mkdir(path, 0700)
-		if e != nil {
-			return e
-		}
-	}
-
-	return nil
-}
-
-func copyFilesToDest(files []string, src string, dest string) error {
-	for _, file := range files {
-		path := filepath.Join(src, file)
-		src := filepath.Join(dest, file)
-
-		from, err := os.Open(src)
-		if err != nil {
-			return err
-		}
-		defer deferClose(from)
-
-		to, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0600)
-		if err != nil {
-			return err
-		}
-		defer deferClose(to)
-
-		_, err = io.Copy(to, from)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func generateAssets(config config.Config) error {
-	// generate css
-	cssDir := filepath.Join(config.Output, "css")
-	err := dirExistOrMkdir(cssDir)
-	if err != nil {
-		return err
-	}
-
-	err = copyFilesToDest(config.Assets.CSS, cssDir, "assets/css/")
-	if err != nil {
-		return err
-	}
-
-	// generate images
-	imgDir := filepath.Join(config.Output, "images")
-	err = dirExistOrMkdir(imgDir)
-	if err != nil {
-		return err
-	}
-
-	err = copyFilesToDest(config.Assets.Images, imgDir, "assets/images/")
-
-	return err
-}
 
 func sourceFiles(source string) (files []os.FileInfo, err error) {
 	file, err := os.Stat(source)
@@ -111,14 +40,6 @@ func source(path string, file os.FileInfo) string {
 	return filepath.Join(path, name)
 }
 
-func destination(path string, file os.FileInfo) string {
-	name := file.Name()
-	basename := filepath.Ext(name)
-	filename := name[0 : len(name)-len(basename)]
-
-	return filepath.Join(path, filename+".html")
-}
-
 func generateFiles(config config.Config) error {
 	var err error
 
@@ -131,7 +52,10 @@ func generateFiles(config config.Config) error {
 		page := &page.Page{}
 		page.Assets = config.Assets
 		page.FileInfo = file
-		page.Destination = destination(config.Output, file)
+
+		basename := fileutils.Basename(file)
+		page.Destination = filepath.Join(config.Output, basename+".html")
+
 		page.Source = source(config.Source, file)
 		page.Template = config.Template
 
@@ -151,19 +75,19 @@ func generateFiles(config config.Config) error {
 }
 
 // Run is the main entrypoint to this program.
-// It's the original caller from inside main() and logs any errors that occur during file generation.
+// It's caller is main() and logs any errors that occur during file generation.
 func Run() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = dirExistOrMkdir(cfg.Output)
+	err = os.MkdirAll(cfg.Output, 0700)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = generateAssets(cfg)
+	err = cfg.Assets.Generate(cfg.Output)
 	if err != nil {
 		log.Fatal(err)
 	}
