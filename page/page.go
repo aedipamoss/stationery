@@ -63,14 +63,7 @@ func (page *Page) load() error {
 	if err != nil {
 		return err
 	}
-	page.Data, err = parseFrontMatter(content)
-	if err != nil {
-		return err
-	}
-	r := regexp.MustCompile(FrontMatterRegex)
-	raw := r.ReplaceAllString(string(content), "")
-	page.Raw = []byte(raw)
-
+	err = page.parseFrontMatter(content)
 	return err
 }
 
@@ -83,21 +76,21 @@ func (page *Page) load() error {
 const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
 
 // Used in load()
-func parseFrontMatter(content []byte) (data Data, err error) {
-	r, err := regexp.Compile(FrontMatterRegex)
-	if err != nil {
-		return data, err
-	}
+func (page *Page) parseFrontMatter(content []byte) error {
+	r := regexp.MustCompile(FrontMatterRegex)
 
 	matches := r.FindAllStringSubmatch(string(content), -1)
 
 	if len(matches) > 0 && len(matches[0]) > 0 {
-		err = yaml.Unmarshal([]byte(matches[0][1]), &data)
+		err := yaml.Unmarshal([]byte(matches[0][1]), &page.Data)
 		if err != nil {
-			return data, err
+			return err
 		}
 	}
-	return data, nil
+
+	raw := r.ReplaceAllString(string(content), "")
+	page.Raw = []byte(raw)
+	return nil
 }
 
 // Timestamp is a member function made available in the page template.
