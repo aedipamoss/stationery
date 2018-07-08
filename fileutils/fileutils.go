@@ -23,16 +23,13 @@ func deferClose(closer io.Closer) {
 // CopyFiles iterates the files array and copies each one to it's destination.
 func CopyFiles(files []string, src string, dest string) error {
 	for _, file := range files {
-		src := filepath.Join(src, file)
-		dest := filepath.Join(dest, file)
-
-		from, err := os.Open(src)
+		from, err := os.Open(filepath.Join(src, file))
 		if err != nil {
 			return err
 		}
 		defer deferClose(from)
 
-		to, err := os.OpenFile(dest, os.O_RDWR|os.O_CREATE, 0600)
+		to, err := os.OpenFile(filepath.Join(dest, file), os.O_RDWR|os.O_CREATE, 0600)
 		if err != nil {
 			return err
 		}
