@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/aedipamoss/stationery/assets"
 )
 
 // Config is structure containing the current blog's configuration
@@ -12,11 +14,7 @@ type Config struct {
 	Source   string
 	Output   string
 	Template string
-	Assets   struct {
-		CSS    []string
-		JS     []string
-		Images []string
-	}
+	Assets   *assets.List
 }
 
 // ConfigFile is the default name for configuration file used by stationery.

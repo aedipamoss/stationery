@@ -8,21 +8,23 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 
-	"github.com/aedipamoss/stationery/config"
+	"github.com/aedipamoss/stationery/assets"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 	yaml "gopkg.in/yaml.v2"
 )
 
 // Page contains everything needed to build a page and write it.
 type Page struct {
-	Content    template.HTML // parsed content into HTML
-	Config     config.Config // supporting config for this project
-	Data       Data          // extracted meta-data from the file
-	Raw        []byte        // raw markdown in bytes
-	SourceFile os.FileInfo   // original source file
+	Assets      *assets.List  // assets available to this page
+	Content     template.HTML // parsed content into HTML
+	Data        Data          // extracted meta-data from the file
+	Destination string        // path to write this page out to
+	FileInfo    os.FileInfo   // original source file info
+	Raw         []byte        // raw markdown in bytes
+	Source      string        // path to the original source file
+	Template    string        // template used for this page
 }
 
 // Data contains the extracted meta-data from the original source.
@@ -34,33 +36,9 @@ type Data struct {
 	Title string
 }
 
-// Only used in load()
-func (page *Page) source() string {
-	name := page.SourceFile.Name()
-	file, err := os.Stat(page.Config.Source)
-	if err != nil {
-		return name
-	}
-
-	if !file.IsDir() {
-		return name
-	}
-
-	return filepath.Join(page.Config.Source, name)
-}
-
-// Used in Generate()
-func (page *Page) destination() string {
-	name := page.SourceFile.Name()
-	basename := filepath.Ext(name)
-	filename := name[0 : len(name)-len(basename)]
-
-	return filepath.Join(page.Config.Output, filename+".html")
-}
-
 // Used in Generate()
 func (page *Page) load() error {
-	content, err := ioutil.ReadFile(page.source())
+	content, err := ioutil.ReadFile(page.Source)
 	if err != nil {
 		return err
 	}
@@ -104,14 +82,14 @@ func (page Page) Timestamp(timestamp string) string {
 // Generate does exactly what the name implies.
 //
 // Given a page this function will parse it's content from markdown to HTML,
-// including the template from config and it's assets into a file on disk.
+// including the template and it's assets into a file on disk.
 func (page Page) Generate() error {
 	err := page.load()
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Create(page.destination())
+	f, err := os.Create(page.Destination)
 	if err != nil {
 		return err
 	}
@@ -134,7 +112,7 @@ func (page Page) Generate() error {
 	// nolint: gas
 	page.Content = template.HTML(string(parsed[:]))
 
-	tmpl, err := ioutil.ReadFile(page.Config.Template)
+	tmpl, err := ioutil.ReadFile(page.Template)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -143,7 +121,7 @@ func (page Page) Generate() error {
 	if err != nil {
 		return err
 	}
-	t, err = t.Parse(AssetsTemplate)
+	t, err = t.Parse(assets.Template)
 	if err != nil {
 		return err
 	}
@@ -156,13 +134,3 @@ func (page Page) Generate() error {
 	err = w.Flush()
 	return err
 }
-
-// AssetsTemplate defines a template which utilizes the Config struct
-// including the fields "Assets.CSS" as an array of stylesheet names
-const AssetsTemplate = `
-{{ define "assets" }}
-  {{ range .Config.Assets.CSS }}
-    <link type="text/css" rel="stylesheet" href="css/{{ . }}">
-  {{ end }}
-{{ end }}
-`

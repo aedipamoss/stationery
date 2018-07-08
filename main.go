@@ -97,6 +97,28 @@ func sourceFiles(source string) (files []os.FileInfo, err error) {
 	return files, err
 }
 
+func source(path string, file os.FileInfo) string {
+	name := file.Name()
+	file, err := os.Stat(path)
+	if err != nil {
+		return name
+	}
+
+	if !file.IsDir() {
+		return name
+	}
+
+	return filepath.Join(path, name)
+}
+
+func destination(path string, file os.FileInfo) string {
+	name := file.Name()
+	basename := filepath.Ext(name)
+	filename := name[0 : len(name)-len(basename)]
+
+	return filepath.Join(path, filename+".html")
+}
+
 func generateFiles(config config.Config) error {
 	var err error
 
@@ -107,8 +129,11 @@ func generateFiles(config config.Config) error {
 
 	for _, file := range files {
 		page := &page.Page{}
-		page.Config = config
-		page.SourceFile = file
+		page.Assets = config.Assets
+		page.FileInfo = file
+		page.Destination = destination(config.Output, file)
+		page.Source = source(config.Source, file)
+		page.Template = config.Template
 
 		err = page.Generate()
 		if err != nil {
