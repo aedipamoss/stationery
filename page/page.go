@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
 
@@ -44,8 +43,9 @@ func (page Page) Timestamp(timestamp string) string {
 // The first use-case for this was a page title.
 const FrontMatterRegex = `(?s)(---\s*\n.*?\n?)(---\s*\n?)`
 
-// Used in load()
-func (page *Page) parseFrontMatter(content []byte) error {
+// Parses the front-matter data into the page and returns the content stripped of meta-data.
+// This function is called directly by parseRaw().
+func (page *Page) parseFrontMatter(content []byte) (string, error) {
 	r := regexp.MustCompile(FrontMatterRegex)
 
 	matches := r.FindAllStringSubmatch(string(content), -1)
@@ -53,76 +53,124 @@ func (page *Page) parseFrontMatter(content []byte) error {
 	if len(matches) > 0 && len(matches[0]) > 0 {
 		err := yaml.Unmarshal([]byte(matches[0][1]), &page.Data)
 		if err != nil {
-			return err
+			return string(content), err
 		}
 	}
 
-	page.Raw = r.ReplaceAllString(string(content), "")
-
-	return nil
+	return r.ReplaceAllString(string(content), ""), nil
 }
 
-// Used in Generate()
-func (page *Page) load() error {
+// Reads the file from source and parses the meta-data into the page.
+// This function also sets the raw data field after parsing.
+// This function is called directly in Load().
+func (page *Page) parseRaw() error {
 	content, err := ioutil.ReadFile(page.Source)
 	if err != nil {
 		return err
 	}
-	err = page.parseFrontMatter(content)
+
+	raw, err := page.parseFrontMatter(content)
+	if err != nil {
+		return err
+	}
+
+	page.Raw = raw
+
 	return err
 }
 
-// Generate does exactly what the name implies.
+// Execute the raw markdown into a generate text template.
+// This function is called directly by parseContent().
 //
-// Given a page this function will parse it's content from markdown to HTML,
-// including the template and it's assets into a file on disk.
-func (page Page) Generate() error {
-	err := page.load()
-	if err != nil {
-		return err
-	}
-
-	f, err := os.Create(page.Destination)
-	if err != nil {
-		return err
-	}
-	w := bufio.NewWriter(f)
-
-	tpl := template.New("content")
-	tpl, err = tpl.Parse(page.Raw)
-	if err != nil {
-		return err
-	}
-
+// BUG(ae): there is probably a simpler way to do this without using template
+func (page *Page) executeContent() ([]byte, error) {
 	buf := new(bytes.Buffer)
+	tpl := template.New("content")
+	tpl, err := tpl.Parse(page.Raw)
+	if err != nil {
+		return buf.Bytes(), err
+	}
+
 	err = tpl.Execute(buf, page)
 	if err != nil {
-		return err
+		return buf.Bytes(), err
 	}
 
-	parsed := blackfriday.Run(buf.Bytes())
+	return buf.Bytes(), err
+}
+
+// Set the page content after parsing the markdown.
+// This function is called directly in Load().
+func (page *Page) parseContent() error {
+	buf, err := page.executeContent()
+	if err != nil {
+		return err
+	}
+	parsed := blackfriday.Run(buf)
 	// nolint: gas
 	page.Content = template.HTML(string(parsed[:]))
 
+	return nil
+}
+
+// Load reads the page from source and parses the content and front-matter into data.
+func (page *Page) Load() error {
+	err := page.parseRaw()
+	if err != nil {
+		return err
+	}
+
+	err = page.parseContent()
+
+	return err
+}
+
+// Create a buffered writer at the page destination.
+// This function is called directly in Generate().
+func (page *Page) createDestination() (*bufio.Writer, error) {
+	f, err := os.Create(page.Destination)
+	if err != nil {
+		return nil, err
+	}
+	return bufio.NewWriter(f), err
+}
+
+// Parse the page template along with assets and return a template ready for execution.
+// This function is called directly in Generate().
+func (page *Page) parseTemplate() (*template.Template, error) {
 	tmpl, err := ioutil.ReadFile(page.Template)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	t, err := template.New("page").Parse(string(tmpl))
 	if err != nil {
-		return err
+		return t, err
 	}
 	t, err = t.Parse(assets.Template)
+	return t, err
+}
+
+// Generate does exactly what the name implies.
+//
+// This function will execute the given template and content along with any assets into a file on disk.
+//
+// BUG(ae): should throw an error if content isn't loaded yet.
+func (page Page) Generate() error {
+	wrtr, err := page.createDestination()
 	if err != nil {
 		return err
 	}
 
-	err = t.Execute(w, page)
-
+	tmpl, err := page.parseTemplate()
 	if err != nil {
 		return err
 	}
-	err = w.Flush()
+
+	err = tmpl.Execute(wrtr, page)
+	if err != nil {
+		return err
+	}
+	err = wrtr.Flush()
 	return err
 }
