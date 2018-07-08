@@ -12,31 +12,6 @@ import (
 	"github.com/aedipamoss/stationery/page"
 )
 
-func generateAssets(config config.Config) error {
-	// generate css
-	cssDir := filepath.Join(config.Output, "css")
-	err := os.MkdirAll(cssDir, 0700)
-	if err != nil {
-		return err
-	}
-
-	err = fileutils.CopyFiles(config.Assets.CSS, cssDir, "assets/css/")
-	if err != nil {
-		return err
-	}
-
-	// generate images
-	imgDir := filepath.Join(config.Output, "images")
-	err = os.MkdirAll(imgDir, 0700)
-	if err != nil {
-		return err
-	}
-
-	err = fileutils.CopyFiles(config.Assets.Images, imgDir, "assets/images/")
-
-	return err
-}
-
 func sourceFiles(source string) (files []os.FileInfo, err error) {
 	file, err := os.Stat(source)
 	if err != nil {
@@ -112,7 +87,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	err = generateAssets(cfg)
+	err = cfg.Assets.Generate(cfg.Output)
 	if err != nil {
 		log.Fatal(err)
 	}
