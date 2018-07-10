@@ -7,9 +7,11 @@ import (
 	"html/template"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"github.com/aedipamoss/stationery/assets"
+	"github.com/aedipamoss/stationery/fileutils"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -113,9 +115,42 @@ func (page *Page) parseContent() error {
 	return nil
 }
 
+func (page *Page) setSource(src string) error {
+	name := page.FileInfo.Name()
+	file, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	if !file.IsDir() {
+		page.Source = name
+		return nil
+	}
+
+	page.Source = filepath.Join(src, name)
+	return nil
+}
+
+func (page *Page) setDestination(dest string) error {
+	basename := fileutils.Basename(page.FileInfo)
+	page.Destination = filepath.Join(dest, basename+".html")
+
+	return nil
+}
+
 // Load reads the page from source and parses the content and front-matter into data.
-func (page *Page) Load() error {
-	err := page.parseRaw()
+func (page *Page) Load(src string, dest string) error {
+	err := page.setSource(src)
+	if err != nil {
+		return err
+	}
+
+	err = page.setDestination(dest)
+	if err != nil {
+		return err
+	}
+
+	err = page.parseRaw()
 	if err != nil {
 		return err
 	}
