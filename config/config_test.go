@@ -27,12 +27,12 @@ assets:
   css:
     - site.css
 `
-	config := Config{}
-	parsed, err := parse(config, []byte(data))
+	cfg := Config{}
+	err := cfg.parse([]byte(data))
 	if err != nil {
 		t.Error(err)
 	}
-	if parsed.Assets.CSS == nil {
+	if cfg.Assets.CSS == nil {
 		t.Error("unable to parse CSS assets")
 	}
 }
@@ -43,12 +43,12 @@ source: path/to/source
 output: path/to/output
 `
 
-	config := Config{}
-	parsed, err := parse(config, []byte(data))
+	cfg := Config{}
+	err := cfg.parse([]byte(data))
 	if err != nil {
 		t.Error(err)
 	}
-	if parsed.Source != "path/to/source" {
+	if cfg.Source != "path/to/source" {
 		t.Error("no source dir was specified")
 	}
 }
