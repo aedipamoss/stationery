@@ -1,10 +1,13 @@
 package generate
 
 import (
+	"bufio"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/page"
@@ -53,6 +56,36 @@ func generateHTML(pages []*page.Page) error {
 	return nil
 }
 
+var IndexTemplate = `
+{{ define "index" }}
+  {{ range . }}
+    {{ .Data.Title }}
+  {{ end }}
+{{ end }}
+`
+
+func generateIndex(pages []*page.Page, cfg config.Config) error {
+	tmpl, err := template.New("index").Parse(IndexTemplate)
+	if err != nil {
+		return err
+	}
+
+	dest := filepath.Join(cfg.Output, "index.html")
+	f, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+
+	buf := bufio.NewWriter(f)
+
+	err = tmpl.Execute(buf, pages)
+	if err != nil {
+		return err
+	}
+	err = buf.Flush()
+	return err
+}
+
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
 func Run() {
@@ -82,6 +115,11 @@ func Run() {
 	}
 
 	err = generateHTML(pages)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateIndex(pages, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
