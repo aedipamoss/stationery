@@ -154,6 +154,14 @@ wow, so easy!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "three.md"), `
+# three
+
+look, i have no data!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
 	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
@@ -165,6 +173,7 @@ wow, so easy!`)
 	}
 
 	mustContain(t, index, `<li><a href="zomg.html">zomg is a thing</a></li>`)
+	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
 	mustContain(t, index, `
 <html>
 <head>`)

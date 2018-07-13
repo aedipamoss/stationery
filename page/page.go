@@ -48,6 +48,10 @@ func (page Page) Slug() string {
 
 // Title is used when printing the index page as the anchor text currently in generate.IndexTemplate.
 func (page Page) Title() string {
+	if page.Data.Title == "" {
+		return page.Slug()
+	}
+
 	return page.Data.Title
 }
 
