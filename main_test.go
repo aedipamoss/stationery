@@ -164,7 +164,7 @@ wow, so easy!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, `<a href="zomg.html">zomg is a thing</a>`)
+	mustContain(t, index, `<li><a href="zomg.html">zomg is a thing</a></li>`)
 	mustContain(t, index, `
 <html>
 <head>`)

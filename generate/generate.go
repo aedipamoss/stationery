@@ -63,9 +63,11 @@ func generateHTML(pages []*page.Page) error {
 var IndexTemplate = `
 {{ define "index" }}
   <div id="index">
-    {{ range . }}
-      <a href="{{ .Slug }}.html">{{ .Title }}</a>
-    {{ end }}
+    <ul>
+      {{ range . }}
+        <li><a href="{{ .Slug }}.html">{{ .Title }}</a></li>
+      {{ end }}
+    </ul>
   </div>
 {{ end }}
 `
