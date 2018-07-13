@@ -47,10 +47,7 @@ this is my temp post!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
-	cmd.Dir = tmpProject
-	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
-	err = cmd.Run()
+	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
 	}
@@ -103,10 +100,7 @@ this is my temp post!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
-	cmd.Dir = tmpProject
-	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
-	err = cmd.Run()
+	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
 	}
@@ -176,16 +170,8 @@ wow, so easy!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	cmd.Dir = tmpProject
-	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
-	err = cmd.Run()
+	err = execCommandWithProject(tmpProject)
 	if err != nil {
-		fmt.Printf("%s: \n%s\n\n", err, stderr.String())
 		t.Fatalf("command finished with error %v", err)
 	}
 
@@ -197,6 +183,24 @@ wow, so easy!`)
 	if !strings.Contains(index, "<a href=\"zomg.html\">zomg is a thing</a>") {
 		t.Errorf("content = %q, wanted <a href=\"zomg.html\">zomg is a thing</a>", index)
 	}
+}
+
+func execCommandWithProject(tmpProject string) error {
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	cmd.Dir = tmpProject
+	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("%s: \n%s\n\n", err, stderr.String())
+		return err
+	}
+
+	return nil
 }
 
 func readTmpPost(path string) (string, error) {
