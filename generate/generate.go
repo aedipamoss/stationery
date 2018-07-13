@@ -14,6 +14,8 @@ import (
 	"github.com/aedipamoss/stationery/page"
 )
 
+var cfg config.Config
+
 func sources(source string) (files []os.FileInfo, err error) {
 	file, err := os.Stat(source)
 	if err != nil {
@@ -28,7 +30,7 @@ func sources(source string) (files []os.FileInfo, err error) {
 	return files, err
 }
 
-func load(files []os.FileInfo, cfg config.Config) (pages []*page.Page, err error) {
+func load(files []os.FileInfo) (pages []*page.Page, err error) {
 	for _, file := range files {
 		page := &page.Page{}
 		page.Assets = cfg.Assets
@@ -65,7 +67,7 @@ var IndexTemplate = `
 {{ end }}
 `
 
-func generateIndex(pages []*page.Page, cfg config.Config) error {
+func generateIndex(pages []*page.Page) error {
 	index := &page.Page{}
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Assets = cfg.Assets
@@ -100,10 +102,11 @@ func generateIndex(pages []*page.Page, cfg config.Config) error {
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
 func Run() {
-	cfg, err := config.Load()
+	loaded, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
+	cfg = loaded
 
 	err = os.MkdirAll(cfg.Output, 0700)
 	if err != nil {
@@ -122,7 +125,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	pages, err := load(files, cfg)
+	pages, err := load(files)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +135,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	err = generateIndex(pages, cfg)
+	err = generateIndex(pages)
 	if err != nil {
 		log.Fatal(err)
 	}
