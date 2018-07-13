@@ -59,6 +59,7 @@ func generateHTML(pages []*page.Page) error {
 	return nil
 }
 
+// IndexTemplate is the text/template used for generating the index page.
 var IndexTemplate = `
 {{ define "index" }}
   {{ range . }}
@@ -86,6 +87,9 @@ func generateIndex(pages []*page.Page) error {
 		return err
 	}
 	err = buf.Flush()
+	if err != nil {
+		return err
+	}
 
 	// nolint: gas
 	index.Content = template.HTML(content.String())

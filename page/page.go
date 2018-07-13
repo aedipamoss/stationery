@@ -38,11 +38,15 @@ func (page Page) Timestamp(timestamp string) string {
 	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
 }
 
+// Slug is used to reference the destination for a page without the extension.
+// It's used both in generate.IndexTemplate and (*page.Page).setDestination()
+// Be careful, this assumes there is a *os.FileInfo attached to the page.
 func (page Page) Slug() string {
 	basename := fileutils.Basename(page.FileInfo)
 	return basename
 }
 
+// Title is used when printing the index page as the anchor text currently in generate.IndexTemplate.
 func (page Page) Title() string {
 	return page.Data.Title
 }
