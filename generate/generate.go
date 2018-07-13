@@ -59,19 +59,18 @@ func generateHTML(pages []*page.Page) error {
 var IndexTemplate = `
 {{ define "index" }}
   {{ range . }}
-    {{ .Data.Title }}
+    <a href="{{ .Slug }}.html">{{ .Title }}</a>
   {{ end }}
 {{ end }}
 `
 
-func generateIndex(pages []*page.Page, cfg config.Config) error {
+func generateIndex(pages []*page.Page, dest string) error {
 	tmpl, err := template.New("index").Parse(IndexTemplate)
 	if err != nil {
 		return err
 	}
 
-	dest := filepath.Join(cfg.Output, "index.html")
-	f, err := os.Create(dest)
+	f, err := os.Create(filepath.Join(dest, "index.html"))
 	if err != nil {
 		return err
 	}
@@ -99,9 +98,11 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	err = cfg.Assets.Generate(cfg.Output)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Assets != nil {
+		err = cfg.Assets.Generate(cfg.Output)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	files, err := sources(cfg.Source)
@@ -119,7 +120,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	err = generateIndex(pages, cfg)
+	err = generateIndex(pages, cfg.Output)
 	if err != nil {
 		log.Fatal(err)
 	}

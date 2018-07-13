@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 
 	"github.com/aedipamoss/stationery/assets"
@@ -35,6 +36,15 @@ type Page struct {
 // In the resulting HTML will get an anchor tag to that timestamp.
 func (page Page) Timestamp(timestamp string) string {
 	return fmt.Sprint("[@ ", timestamp, "](#", timestamp, ")")
+}
+
+func (page Page) Slug() string {
+	basename := fileutils.Basename(page.FileInfo)
+	return basename
+}
+
+func (page Page) Title() string {
+	return page.Data.Title
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.
@@ -132,8 +142,7 @@ func (page *Page) setSource(src string) error {
 }
 
 func (page *Page) setDestination(dest string) error {
-	basename := fileutils.Basename(page.FileInfo)
-	page.Destination = filepath.Join(dest, basename+".html")
+	page.Destination = filepath.Join(dest, page.Slug()+".html")
 
 	return nil
 }
@@ -182,6 +191,18 @@ func (page *Page) parseTemplate() (*template.Template, error) {
 	if err != nil {
 		return t, err
 	}
+	t.Funcs(template.FuncMap{
+		"exists": func(name string, data interface{}) bool {
+			v := reflect.ValueOf(data)
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+			if v.Kind() != reflect.Struct {
+				return false
+			}
+			return v.FieldByName(name).IsValid()
+		},
+	})
 	t, err = t.Parse(assets.Template)
 	return t, err
 }

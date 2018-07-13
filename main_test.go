@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -124,6 +126,76 @@ this is my temp post!`)
 
 	if strings.Contains(string(page), "<h2>title: log of all zomg</h2>") {
 		t.Errorf("meta-data is bleeding into content body: %q", page)
+	}
+}
+
+func TestGenerateIndex(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+template: template.html
+assets:`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "zomg.md"), `
+---
+title: zomg is a thing
+---
+
+# zomg
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+this is my temp post!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "two.md"), `
+---
+title: my second post
+---
+
+# two
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+wow, so easy!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	cmd.Dir = tmpProject
+	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
+	err = cmd.Run()
+	if err != nil {
+		fmt.Printf("%s: \n%s\n\n", err, stderr.String())
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "index.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	if !strings.Contains(index, "<a href=\"zomg.html\">zomg is a thing</a>") {
+		t.Errorf("content = %q, wanted <a href=\"zomg.html\">zomg is a thing</a>", index)
 	}
 }
 

@@ -18,8 +18,10 @@ type List struct {
 // including the "CSS" array of stylesheets to include in the header.
 const Template = `
 {{ define "assets" }}
-  {{ range .Assets.CSS }}
-    <link type="text/css" rel="stylesheet" href="css/{{ . }}">
+  {{ if (exists "CSS" .Assets) }}
+    {{ range .Assets.CSS }}
+      <link type="text/css" rel="stylesheet" href="css/{{ . }}">
+    {{ end }}
   {{ end }}
 {{ end }}
 `
@@ -39,10 +41,19 @@ func setupAndCopy(files []string, src string, dest string) error {
 // Generate will copy assets from each field, CSS, Images, and JS.
 // It copies each file listed to the provided destination.
 func (assets *List) Generate(dest string) error {
-	err := setupAndCopy(assets.CSS, "css", dest)
-	if err != nil {
-		return err
+	if assets.CSS != nil {
+		err := setupAndCopy(assets.CSS, "css", dest)
+		if err != nil {
+			return err
+		}
 	}
 
-	return setupAndCopy(assets.Images, "images", dest)
+	if assets.Images != nil {
+		err := setupAndCopy(assets.Images, "images", dest)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
