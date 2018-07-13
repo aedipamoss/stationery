@@ -62,9 +62,11 @@ func generateHTML(pages []*page.Page) error {
 // IndexTemplate is the text/template used for generating the index page.
 var IndexTemplate = `
 {{ define "index" }}
-  {{ range . }}
-    <a href="{{ .Slug }}.html">{{ .Title }}</a>
-  {{ end }}
+  <div id="index">
+    {{ range . }}
+      <a href="{{ .Slug }}.html">{{ .Title }}</a>
+    {{ end }}
+  </div>
 {{ end }}
 `
 

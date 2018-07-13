@@ -164,10 +164,11 @@ wow, so easy!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, "<a href=\"zomg.html\">zomg is a thing</a>")
+	mustContain(t, index, `<a href="zomg.html">zomg is a thing</a>`)
 	mustContain(t, index, `
 <html>
 <head>`)
+	mustContain(t, index, `<div id="index">`)
 }
 
 func mustContain(t *testing.T, page string, expected string) {
