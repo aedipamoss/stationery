@@ -65,7 +65,7 @@ var IndexTemplate = `
   <div id="index">
     <ul>
       {{ range . }}
-        <li><a href="{{ .Slug }}.html">{{ .Title }}</a></li>
+        <li><a href="{{ .Slug }}.html">{{ if .Data.Title }}{{ .Data.Title }}{{ else }}{{ .Slug }}{{ end }}</a></li>
       {{ end }}
     </ul>
   </div>
