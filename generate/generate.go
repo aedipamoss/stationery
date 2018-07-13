@@ -2,6 +2,7 @@ package generate
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -50,7 +51,7 @@ func generateHTML(pages []*page.Page) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("Wrote: ", page.FileInfo.Name())
+		fmt.Println("Wrote: ", page.Destination)
 	}
 
 	return nil
@@ -64,24 +65,35 @@ var IndexTemplate = `
 {{ end }}
 `
 
-func generateIndex(pages []*page.Page, dest string) error {
+func generateIndex(pages []*page.Page, cfg config.Config) error {
+	index := &page.Page{}
+	index.Destination = filepath.Join(cfg.Output, "index.html")
+	index.Assets = cfg.Assets
+	index.Template = cfg.Template
+
+	var content bytes.Buffer
+	buf := bufio.NewWriter(&content)
+
 	tmpl, err := template.New("index").Parse(IndexTemplate)
 	if err != nil {
 		return err
 	}
-
-	f, err := os.Create(filepath.Join(dest, "index.html"))
-	if err != nil {
-		return err
-	}
-
-	buf := bufio.NewWriter(f)
 
 	err = tmpl.Execute(buf, pages)
 	if err != nil {
 		return err
 	}
 	err = buf.Flush()
+
+	// nolint: gas
+	index.Content = template.HTML(content.String())
+
+	err = index.Generate()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Wrote: ", index.Destination)
 	return err
 }
 
@@ -120,7 +132,7 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	err = generateIndex(pages, cfg.Output)
+	err = generateIndex(pages, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

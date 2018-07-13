@@ -165,6 +165,9 @@ wow, so easy!`)
 	}
 
 	mustContain(t, index, "<a href=\"zomg.html\">zomg is a thing</a>")
+	mustContain(t, index, `
+<html>
+<head>`)
 }
 
 func mustContain(t *testing.T, page string, expected string) {
