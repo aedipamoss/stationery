@@ -57,17 +57,9 @@ this is my temp post!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	if !strings.Contains(page, "<h1>zomg</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg</h1>", page)
-	}
-
-	if !strings.Contains(string(page), "<title>zomg is a thing</title>") {
-		t.Errorf("expected content to have title: %q", page)
-	}
-
-	if strings.Contains(string(page), "<h2>title: zomg is a thing</h2>") {
-		t.Errorf("meta-data is bleeding into content body: %q", page)
-	}
+	mustContain(t, page, "<h1>zomg</h1>")
+	mustContain(t, page, "<title>zomg is a thing</title>")
+	mustNotContain(t, page, "<h2>title: zomg is a thing</h2>")
 }
 
 func TestSingleFileSource(t *testing.T) {
@@ -110,17 +102,9 @@ this is my temp post!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	if !strings.Contains(page, "<h1>zomg all the things</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg all the things</h1>", page)
-	}
-
-	if !strings.Contains(string(page), "<title>log of all zomg</title>") {
-		t.Errorf("expected content to have title: %q", page)
-	}
-
-	if strings.Contains(string(page), "<h2>title: log of all zomg</h2>") {
-		t.Errorf("meta-data is bleeding into content body: %q", page)
-	}
+	mustContain(t, page, "<h1>zomg all the things</h1>")
+	mustContain(t, page, "<title>log of all zomg</title>")
+	mustNotContain(t, page, "<h2>title: log of all zomg</h2>")
 }
 
 func TestGenerateIndex(t *testing.T) {
@@ -180,8 +164,18 @@ wow, so easy!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	if !strings.Contains(index, "<a href=\"zomg.html\">zomg is a thing</a>") {
-		t.Errorf("content = %q, wanted <a href=\"zomg.html\">zomg is a thing</a>", index)
+	mustContain(t, index, "<a href=\"zomg.html\">zomg is a thing</a>")
+}
+
+func mustContain(t *testing.T, page string, expected string) {
+	if !strings.Contains(page, expected) {
+		t.Errorf("content = %q, expected %s", page, expected)
+	}
+}
+
+func mustNotContain(t *testing.T, page string, unexpected string) {
+	if strings.Contains(page, unexpected) {
+		t.Errorf("content = %q, unexpected %s", page, unexpected)
 	}
 }
 
