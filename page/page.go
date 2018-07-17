@@ -40,19 +40,30 @@ func (page Page) Timestamp(timestamp string) string {
 
 // Slug is used to reference the destination for a page without the extension.
 // It's used both in generate.IndexTemplate and (*page.Page).setDestination()
-// Be careful, this assumes there is a *os.FileInfo attached to the page.
 func (page Page) Slug() string {
-	basename := fileutils.Basename(page.FileInfo)
-	return basename
+	if page.FileInfo != nil {
+		return fileutils.Basename(page.FileInfo)
+	}
+
+	return ""
 }
 
 // Title is used when printing the index page as the anchor text currently in generate.IndexTemplate.
 func (page Page) Title() string {
-	if page.Data.Title == "" {
+	if page.Data.Title != "" {
+		return page.Data.Title
+	}
+
+	if page.Slug() != "" {
 		return page.Slug()
 	}
 
-	return page.Data.Title
+	stat, err := os.Stat(page.Destination)
+	if err != nil {
+		panic(err)
+	}
+
+	return fileutils.Basename(stat)
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.

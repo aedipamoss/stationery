@@ -180,6 +180,85 @@ look, i have no data!`)
 	mustContain(t, index, `<div id="index">`)
 }
 
+func TestTitles(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+template: template.html
+title: my blog
+assets:`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "one.md"), `
+---
+title: first!
+---
+
+# one
+
+this is one!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "two.md"), `
+---
+title: second!
+---
+
+# two
+
+this is two!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "three.md"), `
+# three
+
+no title!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "index.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, index, `<li><a href="one.html">first!</a></li>`)
+	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
+	mustContain(t, index, `
+<html>
+<head>
+<title>index</title>`)
+
+	page, err := readTmpPost(filepath.Join(tmpProject, "out", "three.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, page, `<title>three</title>`)
+}
+
 func mustContain(t *testing.T, page string, expected string) {
 	if !strings.Contains(page, expected) {
 		t.Errorf("content = %q, expected %s", page, expected)
@@ -228,7 +307,7 @@ func tmpProjectSetup(tmpConfig string) (string, error) {
 	tmpTemplate := `
 <html>
 <head>
-<title>{{ .Data.Title }}</title>
+<title>{{ .Title }}</title>
 {{ template "assets" . }}
 </head>
 <body>
