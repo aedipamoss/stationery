@@ -138,7 +138,7 @@ func (page *Page) parseContent() error {
 		return err
 	}
 	parsed := blackfriday.Run(buf)
-	// nolint: gas
+	// nolint: gosec
 	page.Content = template.HTML(string(parsed[:]))
 
 	return nil

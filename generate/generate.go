@@ -95,7 +95,7 @@ func generateIndex(pages []*page.Page) error {
 		return err
 	}
 
-	// nolint: gas
+	// nolint: gosec
 	index.Content = template.HTML(content.String())
 
 	err = index.Generate()
