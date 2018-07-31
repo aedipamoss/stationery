@@ -1,6 +1,7 @@
 package fileutils
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -39,6 +40,8 @@ func CopyFiles(files []string, src string, dest string) error {
 		if err != nil {
 			return err
 		}
+
+		fmt.Println("Wrote: ", filepath.Join(dest, file))
 	}
 
 	return nil

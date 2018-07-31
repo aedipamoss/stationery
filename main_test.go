@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -45,10 +47,7 @@ this is my temp post!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
-	cmd.Dir = tmpProject
-	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
-	err = cmd.Run()
+	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
 	}
@@ -58,17 +57,9 @@ this is my temp post!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	if !strings.Contains(page, "<h1>zomg</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg</h1>", page)
-	}
-
-	if !strings.Contains(string(page), "<title>zomg is a thing</title>") {
-		t.Errorf("expected content to have title: %q", page)
-	}
-
-	if strings.Contains(string(page), "<h2>title: zomg is a thing</h2>") {
-		t.Errorf("meta-data is bleeding into content body: %q", page)
-	}
+	mustContain(t, page, "<h1>zomg</h1>")
+	mustContain(t, page, "<title>zomg is a thing</title>")
+	mustNotContain(t, page, "<h2>title: zomg is a thing</h2>")
 }
 
 func TestSingleFileSource(t *testing.T) {
@@ -101,10 +92,7 @@ this is my temp post!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
-	cmd.Dir = tmpProject
-	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
-	err = cmd.Run()
+	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
 	}
@@ -114,17 +102,191 @@ this is my temp post!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	if !strings.Contains(page, "<h1>zomg all the things</h1>") {
-		t.Errorf("content = %q, wanted <h1>zomg all the things</h1>", page)
+	mustContain(t, page, "<h1>zomg all the things</h1>")
+	mustContain(t, page, "<title>log of all zomg</title>")
+	mustNotContain(t, page, "<h2>title: log of all zomg</h2>")
+}
+
+func TestGenerateIndex(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
 	}
 
-	if !strings.Contains(string(page), "<title>log of all zomg</title>") {
-		t.Errorf("expected content to have title: %q", page)
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+template: template.html
+assets:`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
 	}
 
-	if strings.Contains(string(page), "<h2>title: log of all zomg</h2>") {
-		t.Errorf("meta-data is bleeding into content body: %q", page)
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "zomg.md"), `
+---
+title: zomg is a thing
+---
+
+# zomg
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+this is my temp post!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
 	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "two.md"), `
+---
+title: my second post
+---
+
+# two
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+wow, so easy!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "three.md"), `
+# three
+
+look, i have no data!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "index.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, index, `<li><a href="zomg.html">zomg is a thing</a></li>`)
+	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
+	mustContain(t, index, `
+<html>
+<head>`)
+	mustContain(t, index, `<div id="index">`)
+}
+
+func TestTitles(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+template: template.html
+title: my blog
+assets:`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "one.md"), `
+---
+title: first!
+---
+
+# one
+
+this is one!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "two.md"), `
+---
+title: second!
+---
+
+# two
+
+this is two!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "three.md"), `
+# three
+
+no title!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "index.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, index, `<li><a href="one.html">first!</a></li>`)
+	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
+	mustContain(t, index, `
+<html>
+<head>
+<title>index</title>`)
+
+	page, err := readTmpPost(filepath.Join(tmpProject, "out", "three.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, page, `<title>three</title>`)
+}
+
+func mustContain(t *testing.T, page string, expected string) {
+	if !strings.Contains(page, expected) {
+		t.Errorf("content = %q, expected %s", page, expected)
+	}
+}
+
+func mustNotContain(t *testing.T, page string, unexpected string) {
+	if strings.Contains(page, unexpected) {
+		t.Errorf("content = %q, unexpected %s", page, unexpected)
+	}
+}
+
+func execCommandWithProject(tmpProject string) error {
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestStationery")
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	cmd.Dir = tmpProject
+	cmd.Env = append(os.Environ(), "BE_STATIONERY=1")
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("%s: \n%s\n\n", err, stderr.String())
+		return err
+	}
+
+	return nil
 }
 
 func readTmpPost(path string) (string, error) {
@@ -145,7 +307,7 @@ func tmpProjectSetup(tmpConfig string) (string, error) {
 	tmpTemplate := `
 <html>
 <head>
-<title>{{ .Data.Title }}</title>
+<title>{{ .Title }}</title>
 {{ template "assets" . }}
 </head>
 <body>
