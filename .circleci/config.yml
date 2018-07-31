@@ -10,14 +10,15 @@ jobs:
         command: make test
   lint:
     docker:
-    - image: supinf/gometalinter:latest
+    - image: circleci/golang:1.10
       environment:
         CGO_ENABLED: 0
     working_directory: /go/src/github.com/aedipamoss/stationery
     steps:
     - checkout
-    - run:
-        command: gometalinter --deadline 60s --vendor ./...
+    - run: go get -u github.com/alecthomas/gometalinter
+    - run: gometalinter --install
+    - run: gometalinter --deadline 60s --vendor ./...
 workflows:
   version: 2
   ci:
