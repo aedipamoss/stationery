@@ -3,25 +3,51 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:9322085543ac468e014c3cb52415e00b7e0e7191549a07d85b95aaaa3cfcc067"
+  name = "github.com/bradfitz/slice"
+  packages = ["."]
+  pruneopts = ""
+  revision = "d9036e2120b5ddfa53f3ebccd618c4af275f47da"
+
+[[projects]]
+  branch = "master"
+  digest = "1:606fa779c7a80ab6a9ec5836cd12759f86cd6e1d82d5d60cf7ec5133e78c6cf8"
   name = "github.com/shurcooL/sanitized_anchor_name"
   packages = ["."]
+  pruneopts = ""
   revision = "86672fcb3f950f35f2e675df2240550f2a50762f"
 
 [[projects]]
+  branch = "master"
+  digest = "1:2e0e4c5ba96276dd39e5737df3e7a341793270b70dbadc887f07ead413a825ab"
+  name = "go4.org"
+  packages = ["reflectutil"]
+  pruneopts = ""
+  revision = "9599cf28b011184741f249bd9f9330756b506cbc"
+
+[[projects]]
+  digest = "1:1527313af610f96f1ea591b06bb46edfe8ae17f13d74d2e40c4fed7cd618e678"
   name = "gopkg.in/russross/blackfriday.v2"
   packages = ["."]
+  pruneopts = ""
   revision = "cadec560ec52d93835bf2f15bd794700d3a2473b"
   version = "v2.0.0"
 
 [[projects]]
+  digest = "1:f0620375dd1f6251d9973b5f2596228cc8042e887cd7f827e4220bc1ce8c30e2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
+  pruneopts = ""
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
   version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9086b28f130d50c53ee3159bfc342b7e889e9e62425bcf29209a484e076918cb"
+  input-imports = [
+    "github.com/bradfitz/slice",
+    "gopkg.in/russross/blackfriday.v2",
+    "gopkg.in/yaml.v2",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

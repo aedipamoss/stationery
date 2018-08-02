@@ -172,8 +172,8 @@ look, i have no data!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, `<li><a href="zomg.html">zomg is a thing</a></li>`)
-	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
+	mustContain(t, index, `<a href="zomg.html">zomg is a thing</a>`)
+	mustContain(t, index, `<a href="three.html">three</a>`)
 	mustContain(t, index, `
 <html>
 <head>`)
@@ -244,8 +244,8 @@ no title!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, `<li><a href="one.html">first!</a></li>`)
-	mustContain(t, index, `<li><a href="three.html">three</a></li>`)
+	mustContain(t, index, `<a href="one.html">first!</a>`)
+	mustContain(t, index, `<a href="three.html">three</a>`)
 	mustContain(t, index, `
 <html>
 <head>

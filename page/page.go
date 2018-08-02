@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"time"
 
 	"github.com/aedipamoss/stationery/assets"
 	"github.com/aedipamoss/stationery/fileutils"
@@ -22,7 +23,8 @@ type Page struct {
 	Assets  *assets.List  // assets available to this page
 	Content template.HTML // parsed content into HTML
 	Data    struct {      // extracted meta-data from the file
-		Title string
+		Title     string
+		Timestamp string
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
@@ -64,6 +66,58 @@ func (page Page) Title() string {
 	}
 
 	return fileutils.Basename(stat)
+}
+
+// Write a bunch of strings to a buffer then return a string
+func toString(strs ...string) string {
+	var buf bytes.Buffer
+	var err error
+
+	for _, str := range strs {
+		_, err = buf.Write([]byte(str))
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return buf.String()
+}
+
+// Link is used when printing a page's link inside generate.IndexTemplate
+func (page Page) Link() template.HTML {
+	str := toString(
+		"<span class=\"page_date\">",
+		page.DateString(),
+		": </span>",
+		fmt.Sprintf("<a href=\"%s.html\">", page.Slug()),
+		page.Title(),
+		"</a>")
+
+	// nolint: gosec
+	return template.HTML(str)
+}
+
+// DateString returns a string formatted date of the (*page).Date()
+func (page Page) DateString() string {
+	return page.Date().Format("Jan _2, 2006")
+}
+
+// Date creates a time.Time from the meta-data of a page's Data.Timestamp field by parsing it with time.RFC3339.
+func (page Page) Date() time.Time {
+	if page.Data.Timestamp != "" {
+		t, err := time.Parse(time.RFC3339, page.Data.Timestamp)
+		if err != nil {
+			panic(err)
+		}
+
+		return t
+	}
+
+	if page.FileInfo != nil {
+		return page.FileInfo.ModTime()
+	}
+
+	return time.Now()
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.
