@@ -13,6 +13,8 @@ import (
 
 	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/page"
+
+	"github.com/gorilla/feeds"
 )
 
 var cfg config.Config
@@ -58,6 +60,39 @@ func generateHTML(pages []*page.Page) error {
 	}
 
 	return nil
+}
+
+func generateRSS(pages []*page.Page) error {
+	sort.Slice(pages[:], func(i, j int) bool {
+		return pages[i].Date().After(pages[j].Date())
+	})
+
+	feed := feeds.Feed{
+		Title:       cfg.Title,
+		Link:        &feeds.Link{Href: cfg.Link},
+		Description: cfg.Description,
+		Author:      &feeds.Author{Name: cfg.Name, Email: cfg.Email},
+	}
+
+	for _, page := range pages {
+		feed.Add(&feeds.Item{
+			Title:       page.Title(),
+			Link:        &feeds.Link{Href: page.URL(cfg)},
+			Description: page.Description(),
+			Author:      &feeds.Author{Name: cfg.Name, Email: cfg.Email},
+			Created:     page.Date(),
+		})
+	}
+	rss, err := feed.ToRss()
+	if err != nil {
+		return err
+	}
+
+	dest := filepath.Join(cfg.Output, "index.rss")
+	err = ioutil.WriteFile(dest, []byte(rss), 0644)
+
+	fmt.Println("Wrote: ", dest)
+	return err
 }
 
 // IndexTemplate is the text/template used for generating the index page.
@@ -144,6 +179,11 @@ func Run() {
 	}
 
 	err = generateHTML(pages)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateRSS(pages)
 	if err != nil {
 		log.Fatal(err)
 	}
