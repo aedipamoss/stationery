@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/page"
@@ -65,7 +66,7 @@ var IndexTemplate = `
   <div id="index">
     <ul>
       {{ range . }}
-        <li><a href="{{ .Slug }}.html">{{ if .Data.Title }}{{ .Data.Title }}{{ else }}{{ .Slug }}{{ end }}</a></li>
+        <li>{{ .Link }}</li>
       {{ end }}
     </ul>
   </div>
@@ -73,6 +74,10 @@ var IndexTemplate = `
 `
 
 func generateIndex(pages []*page.Page) error {
+	sort.Slice(pages[:], func(i, j int) bool {
+		return pages[i].Date().After(pages[j].Date())
+	})
+
 	index := &page.Page{}
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Assets = cfg.Assets

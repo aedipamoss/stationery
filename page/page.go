@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"time"
 
 	"github.com/aedipamoss/stationery/assets"
 	"github.com/aedipamoss/stationery/fileutils"
@@ -22,7 +23,8 @@ type Page struct {
 	Assets  *assets.List  // assets available to this page
 	Content template.HTML // parsed content into HTML
 	Data    struct {      // extracted meta-data from the file
-		Title string
+		Title     string
+		Timestamp string
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
@@ -64,6 +66,42 @@ func (page Page) Title() string {
 	}
 
 	return fileutils.Basename(stat)
+}
+
+// Link is used when printing a page's link inside generate.IndexTemplate
+func (page Page) Link() template.HTML {
+	var buf bytes.Buffer
+
+	buf.Write([]byte(`<span class="page_date">`))
+	buf.Write([]byte(page.DateString()))
+	buf.Write([]byte(`: </span>`))
+
+	buf.Write([]byte(fmt.Sprintf(`<a href="%s.html">`, page.Slug())))
+	buf.Write([]byte(page.Title()))
+	buf.Write([]byte(`</a>`))
+
+	return template.HTML(buf.String())
+}
+
+func (page Page) DateString() string {
+	return page.Date().Format("Jan _2, 2006")
+}
+
+func (page Page) Date() time.Time {
+	if page.Data.Timestamp != "" {
+		t, err := time.Parse(time.RFC3339, page.Data.Timestamp)
+		if err != nil {
+			panic(err)
+		}
+
+		return t
+	}
+
+	if page.FileInfo != nil {
+		return page.FileInfo.ModTime()
+	}
+
+	return time.Now()
 }
 
 // FrontMatterRegex is a regular expression inspired by Jekyll.
