@@ -3,11 +3,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9322085543ac468e014c3cb52415e00b7e0e7191549a07d85b95aaaa3cfcc067"
-  name = "github.com/bradfitz/slice"
+  digest = "1:b3ef34a6370eed38b149ebf038e85fee07efbb634d913f2f7aaa93ae2bf09f40"
+  name = "github.com/gorilla/feeds"
   packages = ["."]
   pruneopts = ""
-  revision = "d9036e2120b5ddfa53f3ebccd618c4af275f47da"
+  revision = "96fc32f661059113abb411d3183972185b68e4a2"
 
 [[projects]]
   branch = "master"
@@ -16,14 +16,6 @@
   packages = ["."]
   pruneopts = ""
   revision = "86672fcb3f950f35f2e675df2240550f2a50762f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:2e0e4c5ba96276dd39e5737df3e7a341793270b70dbadc887f07ead413a825ab"
-  name = "go4.org"
-  packages = ["reflectutil"]
-  pruneopts = ""
-  revision = "9599cf28b011184741f249bd9f9330756b506cbc"
 
 [[projects]]
   digest = "1:1527313af610f96f1ea591b06bb46edfe8ae17f13d74d2e40c4fed7cd618e678"
@@ -45,7 +37,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/bradfitz/slice",
+    "github.com/gorilla/feeds",
     "gopkg.in/russross/blackfriday.v2",
     "gopkg.in/yaml.v2",
   ]

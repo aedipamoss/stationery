@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"time"
 
 	"github.com/aedipamoss/stationery/assets"
+	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/fileutils"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 	yaml "gopkg.in/yaml.v2"
@@ -23,8 +26,9 @@ type Page struct {
 	Assets  *assets.List  // assets available to this page
 	Content template.HTML // parsed content into HTML
 	Data    struct {      // extracted meta-data from the file
-		Title     string
-		Timestamp string
+		Description string
+		Title       string
+		Timestamp   string
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
@@ -95,6 +99,33 @@ func (page Page) Link() template.HTML {
 
 	// nolint: gosec
 	return template.HTML(str)
+}
+
+// URL is used when generating the rss feed for the site.
+func (page Page) URL(cfg config.Config) string {
+	url, err := url.Parse("")
+	if err != nil {
+		panic(err)
+	}
+
+	if cfg.Link != "" {
+		url, err = url.Parse(cfg.Link)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	url.Path = path.Join(url.Path, page.Slug()+".html")
+	return url.String()
+}
+
+// Description is used when generating the rss feed for the site.
+func (page Page) Description() string {
+	if page.Data.Description != "" {
+		return page.Data.Description
+	}
+
+	return page.Title()
 }
 
 // DateString returns a string formatted date of the (*page).Date()

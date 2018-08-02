@@ -11,10 +11,16 @@ import (
 
 // Config is structure containing the current blog's configuration
 type Config struct {
-	Source   string
-	Output   string
-	Template string
 	Assets   *assets.List
+	Output   string
+	Source   string
+	Template string
+	// RSS fields
+	Title       string
+	Link        string
+	Description string
+	Name        string
+	Email       string
 }
 
 // ConfigFile is the default name for configuration file used by stationery.
