@@ -68,25 +68,41 @@ func (page Page) Title() string {
 	return fileutils.Basename(stat)
 }
 
-// Link is used when printing a page's link inside generate.IndexTemplate
-func (page Page) Link() template.HTML {
+// Write a bunch of strings to a buffer then return a string
+func toString(strs ...string) string {
 	var buf bytes.Buffer
+	var err error
 
-	buf.Write([]byte(`<span class="page_date">`))
-	buf.Write([]byte(page.DateString()))
-	buf.Write([]byte(`: </span>`))
+	for _, str := range strs {
+		_, err = buf.Write([]byte(str))
+		if err != nil {
+			panic(err)
+		}
+	}
 
-	buf.Write([]byte(fmt.Sprintf(`<a href="%s.html">`, page.Slug())))
-	buf.Write([]byte(page.Title()))
-	buf.Write([]byte(`</a>`))
-
-	return template.HTML(buf.String())
+	return buf.String()
 }
 
+// Link is used when printing a page's link inside generate.IndexTemplate
+func (page Page) Link() template.HTML {
+	str := toString(
+		"<span class=\"page_date\">",
+		page.DateString(),
+		": </span>",
+		fmt.Sprintf("<a href=\"%s.html\">", page.Slug()),
+		page.Title(),
+		"</a>")
+
+	// nolint: gosec
+	return template.HTML(str)
+}
+
+// DateString returns a string formatted date of the (*page).Date()
 func (page Page) DateString() string {
 	return page.Date().Format("Jan _2, 2006")
 }
 
+// Date creates a time.Time from the meta-data of a page's Data.Timestamp field by parsing it with time.RFC3339.
 func (page Page) Date() time.Time {
 	if page.Data.Timestamp != "" {
 		t, err := time.Parse(time.RFC3339, page.Data.Timestamp)
