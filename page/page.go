@@ -90,12 +90,13 @@ func toString(strs ...string) string {
 // Link is used when printing a page's link inside generate.IndexTemplate
 func (page Page) Link() template.HTML {
 	str := toString(
-		"<span class=\"page_date\">",
-		page.DateString(),
-		": </span>",
 		fmt.Sprintf("<a href=\"%s.html\">", page.Slug()),
 		page.Title(),
-		"</a>")
+		"</a>",
+		"<br>",
+		"<span class=\"page_date\">",
+		page.DateString(),
+		"</span>")
 
 	// nolint: gosec
 	return template.HTML(str)
