@@ -139,6 +139,59 @@ func generateIndex(pages []*page.Page) error {
 	return err
 }
 
+func buildTagsTree(pages []*page.Page) map[string][]*page.Page {
+	tree := make(map[string][]*page.Page)
+	for _, page := range pages {
+		if len(page.Data.Tags) > 0 {
+			for _, tag := range page.Data.Tags {
+				tree[tag] = append(tree[tag], page)
+			}
+		}
+	}
+
+	return tree
+}
+
+func generateTags(pages []*page.Page) error {
+	tree := buildTagsTree(pages)
+
+	for tag, ps := range tree {
+		p := &page.Page{}
+		p.Destination = filepath.Join(cfg.Output, fmt.Sprintf("tag-%s.html", tag))
+		p.Assets = cfg.Assets
+		p.Template = cfg.Template
+
+		var content bytes.Buffer
+		buf := bufio.NewWriter(&content)
+
+		tmpl, err := template.New("index").Parse(IndexTemplate)
+		if err != nil {
+			return err
+		}
+
+		err = tmpl.Execute(buf, ps)
+		if err != nil {
+			return err
+		}
+		err = buf.Flush()
+		if err != nil {
+			return err
+		}
+
+		// nolint: gosec
+		p.Content = template.HTML(content.String())
+
+		err = p.Generate()
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Wrote: ", p.Destination)
+	}
+
+	return nil
+}
+
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
 func Run() {
@@ -185,6 +238,11 @@ func Run() {
 	}
 
 	err = generateIndex(pages)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateTags(pages)
 	if err != nil {
 		log.Fatal(err)
 	}

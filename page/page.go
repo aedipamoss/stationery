@@ -29,6 +29,7 @@ type Page struct {
 		Description string
 		Title       string
 		Timestamp   string
+		Tags        []string
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
@@ -87,6 +88,21 @@ func toString(strs ...string) string {
 	return buf.String()
 }
 
+func (page Page) Tags() template.HTML {
+	var str string
+	if len(page.Data.Tags) > 0 {
+		str += "<br>"
+		for _, tag := range page.Data.Tags {
+			str += `<span class="tag">#`
+			str += fmt.Sprintf("<a href=\"tag-%s.html\">", tag)
+			str += tag
+			str += `</a>`
+			str += `</span>`
+		}
+	}
+	return template.HTML(str)
+}
+
 // Link is used when printing a page's link inside generate.IndexTemplate
 func (page Page) Link() template.HTML {
 	str := toString(
@@ -94,9 +110,11 @@ func (page Page) Link() template.HTML {
 		page.Title(),
 		"</a>",
 		"<br>",
-		"<span class=\"page_date\">",
+		`<span class="page_date">`,
 		page.DateString(),
 		"</span>")
+
+	str += string(page.Tags())
 
 	// nolint: gosec
 	return template.HTML(str)
