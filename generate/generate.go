@@ -63,10 +63,6 @@ func generateHTML(pages []*page.Page) error {
 }
 
 func generateRSS(pages []*page.Page) error {
-	sort.Slice(pages[:], func(i, j int) bool {
-		return pages[i].Date().After(pages[j].Date())
-	})
-
 	feed := feeds.Feed{
 		Title:       cfg.Title,
 		Link:        &feeds.Link{Href: cfg.Link},
@@ -109,10 +105,6 @@ var IndexTemplate = `
 `
 
 func generateIndex(pages []*page.Page) error {
-	sort.Slice(pages[:], func(i, j int) bool {
-		return pages[i].Date().After(pages[j].Date())
-	})
-
 	index := &page.Page{}
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Assets = cfg.Assets
@@ -177,6 +169,10 @@ func Run() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	sort.Slice(pages[:], func(i, j int) bool {
+		return pages[i].Date().After(pages[j].Date())
+	})
 
 	err = generateHTML(pages)
 	if err != nil {
