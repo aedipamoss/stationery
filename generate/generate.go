@@ -19,21 +19,23 @@ import (
 
 var cfg config.Config
 
-func sources(source string) (files []os.FileInfo, err error) {
+// Returns a list of pages sorted by date
+func load(source string) (pages []*page.Page, err error) {
+	var files []os.FileInfo
 	file, err := os.Stat(source)
 	if err != nil {
 		return nil, err
 	}
 
 	if !file.IsDir() {
-		return []os.FileInfo{file}, nil
+		files = []os.FileInfo{file}
+	} else {
+		files, err = ioutil.ReadDir(source)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	files, err = ioutil.ReadDir(source)
-	return files, err
-}
-
-func load(files []os.FileInfo) (pages []*page.Page, err error) {
 	for _, file := range files {
 		page := &page.Page{}
 		page.Assets = cfg.Assets
@@ -46,6 +48,10 @@ func load(files []os.FileInfo) (pages []*page.Page, err error) {
 		}
 		pages = append(pages, page)
 	}
+
+	sort.Slice(pages[:], func(i, j int) bool {
+		return pages[i].Date().After(pages[j].Date())
+	})
 
 	return pages, nil
 }
@@ -213,19 +219,10 @@ func Run() {
 		}
 	}
 
-	files, err := sources(cfg.Source)
+	pages, err := load(cfg.Source)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	pages, err := load(files)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sort.Slice(pages[:], func(i, j int) bool {
-		return pages[i].Date().After(pages[j].Date())
-	})
 
 	err = generateHTML(pages)
 	if err != nil {

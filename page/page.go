@@ -88,6 +88,7 @@ func toString(strs ...string) string {
 	return buf.String()
 }
 
+// Tags will build a list of tags and their links in an HTML safe way.
 func (page Page) Tags() template.HTML {
 	var str string
 	if len(page.Data.Tags) > 0 {
@@ -100,6 +101,7 @@ func (page Page) Tags() template.HTML {
 			str += `</span>`
 		}
 	}
+	// nolint: gosec
 	return template.HTML(str)
 }
 
