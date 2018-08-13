@@ -19,21 +19,23 @@ import (
 
 var cfg config.Config
 
-func sources(source string) (files []os.FileInfo, err error) {
+// Returns a list of pages sorted by date
+func load(source string) (pages []*page.Page, err error) {
+	var files []os.FileInfo
 	file, err := os.Stat(source)
 	if err != nil {
 		return nil, err
 	}
 
 	if !file.IsDir() {
-		return []os.FileInfo{file}, nil
+		files = []os.FileInfo{file}
+	} else {
+		files, err = ioutil.ReadDir(source)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	files, err = ioutil.ReadDir(source)
-	return files, err
-}
-
-func load(files []os.FileInfo) (pages []*page.Page, err error) {
 	for _, file := range files {
 		page := &page.Page{}
 		page.Assets = cfg.Assets
@@ -46,6 +48,10 @@ func load(files []os.FileInfo) (pages []*page.Page, err error) {
 		}
 		pages = append(pages, page)
 	}
+
+	sort.Slice(pages[:], func(i, j int) bool {
+		return pages[i].Date().After(pages[j].Date())
+	})
 
 	return pages, nil
 }
@@ -63,10 +69,6 @@ func generateHTML(pages []*page.Page) error {
 }
 
 func generateRSS(pages []*page.Page) error {
-	sort.Slice(pages[:], func(i, j int) bool {
-		return pages[i].Date().After(pages[j].Date())
-	})
-
 	feed := feeds.Feed{
 		Title:       cfg.Title,
 		Link:        &feeds.Link{Href: cfg.Link},
@@ -109,10 +111,6 @@ var IndexTemplate = `
 `
 
 func generateIndex(pages []*page.Page) error {
-	sort.Slice(pages[:], func(i, j int) bool {
-		return pages[i].Date().After(pages[j].Date())
-	})
-
 	index := &page.Page{}
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Assets = cfg.Assets
@@ -147,6 +145,59 @@ func generateIndex(pages []*page.Page) error {
 	return err
 }
 
+func buildTagsTree(pages []*page.Page) map[string][]*page.Page {
+	tree := make(map[string][]*page.Page)
+	for _, page := range pages {
+		if len(page.Data.Tags) > 0 {
+			for _, tag := range page.Data.Tags {
+				tree[tag] = append(tree[tag], page)
+			}
+		}
+	}
+
+	return tree
+}
+
+func generateTags(pages []*page.Page) error {
+	tree := buildTagsTree(pages)
+
+	for tag, ps := range tree {
+		p := &page.Page{}
+		p.Destination = filepath.Join(cfg.Output, fmt.Sprintf("tag-%s.html", tag))
+		p.Assets = cfg.Assets
+		p.Template = cfg.Template
+
+		var content bytes.Buffer
+		buf := bufio.NewWriter(&content)
+
+		tmpl, err := template.New("index").Parse(IndexTemplate)
+		if err != nil {
+			return err
+		}
+
+		err = tmpl.Execute(buf, ps)
+		if err != nil {
+			return err
+		}
+		err = buf.Flush()
+		if err != nil {
+			return err
+		}
+
+		// nolint: gosec
+		p.Content = template.HTML(content.String())
+
+		err = p.Generate()
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Wrote: ", p.Destination)
+	}
+
+	return nil
+}
+
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
 func Run() {
@@ -168,12 +219,7 @@ func Run() {
 		}
 	}
 
-	files, err := sources(cfg.Source)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pages, err := load(files)
+	pages, err := load(cfg.Source)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,6 +235,11 @@ func Run() {
 	}
 
 	err = generateIndex(pages)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = generateTags(pages)
 	if err != nil {
 		log.Fatal(err)
 	}
