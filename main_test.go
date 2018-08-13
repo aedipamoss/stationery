@@ -20,7 +20,6 @@ func TestStationery(t *testing.T) {
 	tmpProject, err := tmpProjectSetup(`
 source: src
 output: out
-template: template.html
 assets:
   css:
     - style.css`)
@@ -71,7 +70,6 @@ func TestSingleFileSource(t *testing.T) {
 	tmpProject, err := tmpProjectSetup(`
 source: src.md
 output: out
-template: template.html
 assets:
   css:
     - style.css`)
@@ -116,7 +114,6 @@ func TestGenerateIndex(t *testing.T) {
 	tmpProject, err := tmpProjectSetup(`
 source: src
 output: out
-template: template.html
 assets:`)
 	if err != nil {
 		t.Fatalf("unable to setup temporary working dir")
@@ -189,7 +186,6 @@ func TestTitles(t *testing.T) {
 	tmpProject, err := tmpProjectSetup(`
 source: src
 output: out
-template: template.html
 title: my blog
 assets:`)
 	if err != nil {
@@ -304,7 +300,7 @@ func tmpProjectSetup(tmpConfig string) (string, error) {
 		return tmpProject, err
 	}
 
-	tmpTemplate := `
+	tmpPageTemplate := `
 <html>
 <head>
 <title>{{ .Title }}</title>
@@ -322,6 +318,24 @@ html {
     font-family: mono;
 }`
 
+	tmpIndexTemplate := `
+<html>
+<head>
+<title>{{ .Title }}</title>
+{{ template "assets" . }}
+</head>
+<body>
+  <div id="index">
+    <ul>
+      {{ range .Children }}
+        <li>{{ .Link }}</li>
+      {{ end }}
+    </ul>
+  </div>
+</body>
+</html>
+`
+
 	// setup temp assets dir
 	err = mkdir(filepath.Join(tmpProject, "assets", "css"))
 	if err != nil {
@@ -333,8 +347,19 @@ html {
 		return tmpProject, err
 	}
 
-	// write temp template to temp project dir
-	if err = ioutil.WriteFile(filepath.Join(tmpProject, "template.html"), []byte(tmpTemplate), 0666); err != nil {
+	// setup temp layouts dir
+	err = mkdir(filepath.Join(tmpProject, "layouts"))
+	if err != nil {
+		return tmpProject, err
+	}
+
+	// write temp page template to temp project dir
+	if err = ioutil.WriteFile(filepath.Join(tmpProject, "layouts", "page.html"), []byte(tmpPageTemplate), 0666); err != nil {
+		return tmpProject, err
+	}
+
+	// write temp index template to temp project dir
+	if err = ioutil.WriteFile(filepath.Join(tmpProject, "layouts", "index.html"), []byte(tmpIndexTemplate), 0666); err != nil {
 		return tmpProject, err
 	}
 
