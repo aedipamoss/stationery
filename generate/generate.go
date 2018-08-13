@@ -34,6 +34,9 @@ func load(source string) (pages []*page.Page, err error) {
 	}
 
 	for _, file := range files {
+		if filepath.Ext(file.Name()) != ".md" {
+			continue
+		}
 		page := &page.Page{}
 		page.Assets = cfg.Assets
 		page.FileInfo = file

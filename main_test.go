@@ -46,9 +46,26 @@ this is my temp post!`)
 		t.Fatalf("unable to create temporary post")
 	}
 
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "boom.wtf"), `
+---
+title: ":boom: goes the dynamite"
+---
+
+# boom
+{{ .Timestamp "2018-08-13T23:20:49+09:00" }}
+
+this file should be ignored!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
 	err = execCommandWithProject(tmpProject)
 	if err != nil {
 		t.Fatalf("command finished with error %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(tmpProject, "out", "boom.html")); err == nil {
+		t.Fatalf("file without .md extension was generated")
 	}
 
 	page, err := readTmpPost(filepath.Join(tmpProject, "out", "zomg.html"))
