@@ -249,7 +249,7 @@ no title!`)
 	mustContain(t, index, `
 <html>
 <head>
-<title>index</title>`)
+<title>my blog</title>`)
 
 	page, err := readTmpPost(filepath.Join(tmpProject, "out", "three.html"))
 	if err != nil {
