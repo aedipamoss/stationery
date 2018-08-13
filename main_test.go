@@ -64,7 +64,7 @@ this file should be ignored!`)
 		t.Fatalf("command finished with error %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(tmpProject, "out", "boom.html")); err == nil {
+	if _, err = os.Stat(filepath.Join(tmpProject, "out", "boom.html")); err == nil {
 		t.Fatalf("file without .md extension was generated")
 	}
 
