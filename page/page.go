@@ -23,9 +23,10 @@ import (
 
 // Page contains everything needed to build a page and write it.
 type Page struct {
-	Assets  *assets.List  // assets available to this page
-	Content template.HTML // parsed content into HTML
-	Data    struct {      // extracted meta-data from the file
+	Assets   *assets.List  // assets available to this page
+	Children []*Page       // children pages used for index templates
+	Content  template.HTML // parsed content into HTML
+	Data     struct {      // extracted meta-data from the file
 		Description string
 		Title       string
 		Timestamp   string

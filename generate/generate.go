@@ -1,10 +1,7 @@
 package generate
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
@@ -37,12 +34,15 @@ func load(source string) (pages []*page.Page, err error) {
 	}
 
 	for _, file := range files {
+		if filepath.Ext(file.Name()) != ".md" {
+			continue
+		}
 		page := &page.Page{}
 		page.Assets = cfg.Assets
 		page.FileInfo = file
-		page.Template = cfg.Template
+		page.Template = filepath.Join("layouts", "page.html")
 
-		err = page.Load(cfg.Source, cfg.Output)
+		err := page.Load(cfg.Source, cfg.Output)
 		if err != nil {
 			return pages, err
 		}
@@ -97,46 +97,15 @@ func generateRSS(pages []*page.Page) error {
 	return err
 }
 
-// IndexTemplate is the text/template used for generating the index page.
-var IndexTemplate = `
-{{ define "index" }}
-  <div id="index">
-    <ul>
-      {{ range . }}
-        <li>{{ .Link }}</li>
-      {{ end }}
-    </ul>
-  </div>
-{{ end }}
-`
-
 func generateIndex(pages []*page.Page) error {
 	index := &page.Page{}
-	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Assets = cfg.Assets
-	index.Template = cfg.Template
+	index.Data.Title = cfg.Title
+	index.Destination = filepath.Join(cfg.Output, "index.html")
+	index.Template = filepath.Join("layouts", "index.html")
+	index.Children = pages
 
-	var content bytes.Buffer
-	buf := bufio.NewWriter(&content)
-
-	tmpl, err := template.New("index").Parse(IndexTemplate)
-	if err != nil {
-		return err
-	}
-
-	err = tmpl.Execute(buf, pages)
-	if err != nil {
-		return err
-	}
-	err = buf.Flush()
-	if err != nil {
-		return err
-	}
-
-	// nolint: gosec
-	index.Content = template.HTML(content.String())
-
-	err = index.Generate()
+	err := index.Generate()
 	if err != nil {
 		return err
 	}
@@ -163,31 +132,13 @@ func generateTags(pages []*page.Page) error {
 
 	for tag, ps := range tree {
 		p := &page.Page{}
-		p.Destination = filepath.Join(cfg.Output, fmt.Sprintf("tag-%s.html", tag))
 		p.Assets = cfg.Assets
-		p.Template = cfg.Template
+		p.Data.Title = cfg.Title
+		p.Destination = filepath.Join(cfg.Output, fmt.Sprintf("tag-%s.html", tag))
+		p.Template = filepath.Join("layouts", "index.html")
+		p.Children = ps
 
-		var content bytes.Buffer
-		buf := bufio.NewWriter(&content)
-
-		tmpl, err := template.New("index").Parse(IndexTemplate)
-		if err != nil {
-			return err
-		}
-
-		err = tmpl.Execute(buf, ps)
-		if err != nil {
-			return err
-		}
-		err = buf.Flush()
-		if err != nil {
-			return err
-		}
-
-		// nolint: gosec
-		p.Content = template.HTML(content.String())
-
-		err = p.Generate()
+		err := p.Generate()
 		if err != nil {
 			return err
 		}

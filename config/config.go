@@ -11,10 +11,10 @@ import (
 
 // Config is structure containing the current blog's configuration
 type Config struct {
-	Assets   *assets.List
-	Output   string
-	Source   string
-	Template string
+	Assets  *assets.List
+	Output  string
+	Source  string
+	Layouts []string
 	// RSS fields
 	Title       string
 	Link        string
