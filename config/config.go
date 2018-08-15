@@ -15,7 +15,7 @@ type Config struct {
 	Output  string
 	Source  string
 	Layouts []string
-	SiteURL string
+	SiteURL string `yaml:"site-url"`
 	// RSS fields
 	Title       string
 	Description string
