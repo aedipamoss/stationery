@@ -96,7 +96,7 @@ func (page Page) Tags() template.HTML {
 		str += "<br>"
 		for _, tag := range page.Data.Tags {
 			str += `<span class="tag">#`
-			str += fmt.Sprintf("<a href=\"%stag/%s.html\">", page.Root, tag)
+			str += fmt.Sprintf(`<a href="%stag/%s.html">`, page.Root, tag)
 			str += tag
 			str += `</a>`
 			str += `</span>`
@@ -109,7 +109,7 @@ func (page Page) Tags() template.HTML {
 // Link is used when printing a page's link inside generate.IndexTemplate
 func (page Page) Link() template.HTML {
 	str := toString(
-		fmt.Sprintf("<a href=\"%s%s.html\">", page.Root, page.Slug()),
+		fmt.Sprintf(`<a href="%s%s.html">`, page.Root, page.Slug()),
 		page.Title(),
 		"</a>",
 		"<br>",
