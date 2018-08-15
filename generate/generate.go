@@ -130,11 +130,17 @@ func buildTagsTree(pages []*page.Page) map[string][]*page.Page {
 func generateTags(pages []*page.Page) error {
 	tree := buildTagsTree(pages)
 
+	err := os.MkdirAll(filepath.Join(cfg.Output, "tag"), 0700)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for tag, ps := range tree {
 		p := &page.Page{}
 		p.Assets = cfg.Assets
+		p.Assets.Prefix = "../"
 		p.Data.Title = cfg.Title
-		p.Destination = filepath.Join(cfg.Output, fmt.Sprintf("tag-%s.html", tag))
+		p.Destination = filepath.Join(cfg.Output, "tag", fmt.Sprintf("%s.html", tag))
 		p.Template = filepath.Join("layouts", "index.html")
 		p.Children = ps
 
