@@ -31,6 +31,7 @@ type Page struct {
 		Title       string
 		Timestamp   string
 		Tags        []string
+		Twitter     string // twitter user handle who created this page
 	}
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
@@ -38,7 +39,6 @@ type Page struct {
 	Root        string      // parent of this page, usually config.SiteURL
 	Source      string      // path to the original source file
 	Template    string      // template used for this page
-	Twitter     string      // twitter user handle who created this page
 }
 
 // Timestamp is a member function made available in the page template.
@@ -112,10 +112,10 @@ func (page Page) MetaTags() template.HTML {
 		str += fmt.Sprintf(`<meta property="og:description" content="%s" />`, page.Data.Description)
 	}
 
-	if page.Twitter != "" {
+	if page.Data.Twitter != "" {
 		str += `<meta name="twitter:card" content="summary" />`
-		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Twitter)
-		str += fmt.Sprintf(`<meta name="twitter:creator" content="@f%s" />`, page.Twitter)
+		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Data.Twitter)
+		str += fmt.Sprintf(`<meta name="twitter:creator" content="@f%s" />`, page.Data.Twitter)
 	}
 
 	str += fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL())
