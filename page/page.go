@@ -27,6 +27,7 @@ type Page struct {
 	Content  template.HTML // parsed content into HTML
 	Data     struct {      // extracted meta-data from the file
 		Description string
+		Image       string
 		Title       string
 		Timestamp   string
 		Tags        []string
@@ -37,6 +38,7 @@ type Page struct {
 	Root        string      // parent of this page, usually config.SiteURL
 	Source      string      // path to the original source file
 	Template    string      // template used for this page
+	Twitter     string      // twitter user handle who created this page
 }
 
 // Timestamp is a member function made available in the page template.
@@ -53,7 +55,12 @@ func (page Page) Slug() string {
 		return fileutils.Basename(page.FileInfo)
 	}
 
-	return ""
+	stat, err := os.Stat(page.Destination)
+	if err != nil {
+		panic(err)
+	}
+
+	return fileutils.Basename(stat)
 }
 
 // Title is used when printing the index page as the anchor text currently in generate.IndexTemplate.
@@ -62,16 +69,7 @@ func (page Page) Title() string {
 		return page.Data.Title
 	}
 
-	if page.Slug() != "" {
-		return page.Slug()
-	}
-
-	stat, err := os.Stat(page.Destination)
-	if err != nil {
-		panic(err)
-	}
-
-	return fileutils.Basename(stat)
+	return page.Slug()
 }
 
 // Write a bunch of strings to a buffer then return a string
@@ -96,7 +94,7 @@ func (page Page) Tags() template.HTML {
 		str += "<br>"
 		for _, tag := range page.Data.Tags {
 			str += `<span class="tag">#`
-			str += fmt.Sprintf("<a href=\"%stag/%s.html\">", page.Root, tag)
+			str += fmt.Sprintf(`<a href="%stag/%s.html">`, page.Root, tag)
 			str += tag
 			str += `</a>`
 			str += `</span>`
@@ -106,10 +104,35 @@ func (page Page) Tags() template.HTML {
 	return template.HTML(str)
 }
 
+// MetaTags builds a list of meta tags for the header of a page.
+func (page Page) MetaTags() template.HTML {
+	var str string
+	if page.Data.Description != "" {
+		str += fmt.Sprintf(`<meta name="description" content="%s">`, page.Data.Description)
+		str += fmt.Sprintf(`<meta property="og:description" content="%s" />`, page.Data.Description)
+	}
+
+	if page.Twitter != "" {
+		str += `<meta name="twitter:card" content="summary" />`
+		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Twitter)
+		str += fmt.Sprintf(`<meta name="twitter:creator" content="@f%s" />`, page.Twitter)
+	}
+
+	str += fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL())
+	str += fmt.Sprintf(`<meta property="og:title" content="%s" />`, page.Title())
+
+	if page.Data.Image != "" {
+		str += fmt.Sprintf(`<meta property="og:image" content="%s%s" />`, page.Root, page.Data.Image)
+	}
+
+	// nolint: gosec
+	return template.HTML(str)
+}
+
 // Link is used when printing a page's link inside generate.IndexTemplate
 func (page Page) Link() template.HTML {
 	str := toString(
-		fmt.Sprintf("<a href=\"%s%s.html\">", page.Root, page.Slug()),
+		fmt.Sprintf(`<a href="%s%s.html">`, page.Root, page.Slug()),
 		page.Title(),
 		"</a>",
 		"<br>",
