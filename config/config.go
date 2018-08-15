@@ -15,9 +15,9 @@ type Config struct {
 	Output  string
 	Source  string
 	Layouts []string
+	SiteURL string
 	// RSS fields
 	Title       string
-	Link        string
 	Description string
 	Name        string
 	Email       string

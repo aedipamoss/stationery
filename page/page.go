@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/aedipamoss/stationery/assets"
-	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/fileutils"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
 	yaml "gopkg.in/yaml.v2"
@@ -35,6 +34,7 @@ type Page struct {
 	Destination string      // path to write this page out to
 	FileInfo    os.FileInfo // original source file info
 	Raw         string      // raw markdown after subbing data
+	Root        string      // parent of this page, usually config.SiteURL
 	Source      string      // path to the original source file
 	Template    string      // template used for this page
 }
@@ -96,7 +96,7 @@ func (page Page) Tags() template.HTML {
 		str += "<br>"
 		for _, tag := range page.Data.Tags {
 			str += `<span class="tag">#`
-			str += fmt.Sprintf("<a href=\"tag-%s.html\">", tag)
+			str += fmt.Sprintf("<a href=\"%stag/%s.html\">", page.Root, tag)
 			str += tag
 			str += `</a>`
 			str += `</span>`
@@ -109,7 +109,7 @@ func (page Page) Tags() template.HTML {
 // Link is used when printing a page's link inside generate.IndexTemplate
 func (page Page) Link() template.HTML {
 	str := toString(
-		fmt.Sprintf("<a href=\"%s.html\">", page.Slug()),
+		fmt.Sprintf("<a href=\"%s%s.html\">", page.Root, page.Slug()),
 		page.Title(),
 		"</a>",
 		"<br>",
@@ -124,17 +124,15 @@ func (page Page) Link() template.HTML {
 }
 
 // URL is used when generating the rss feed for the site.
-func (page Page) URL(cfg config.Config) string {
+func (page Page) URL() string {
 	url, err := url.Parse("")
 	if err != nil {
 		panic(err)
 	}
 
-	if cfg.Link != "" {
-		url, err = url.Parse(cfg.Link)
-		if err != nil {
-			panic(err)
-		}
+	url, err = url.Parse(page.Root)
+	if err != nil {
+		panic(err)
 	}
 
 	url.Path = path.Join(url.Path, page.Slug()+".html")

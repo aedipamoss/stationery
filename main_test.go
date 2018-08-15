@@ -137,6 +137,8 @@ assets:`)
 	}
 	defer os.RemoveAll(tmpProject)
 
+	tmpOut := filepath.Join(tmpProject, "out")
+
 	err = mkdir(filepath.Join(tmpProject, "src"))
 	if err != nil {
 		t.Fatalf("unable to setup temp project src dir")
@@ -186,8 +188,81 @@ look, i have no data!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, `<a href="zomg.html">zomg is a thing</a>`)
-	mustContain(t, index, `<a href="three.html">three</a>`)
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/zomg.html">zomg is a thing</a>`, tmpOut))
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/three.html">three</a>`, tmpOut))
+	mustContain(t, index, `
+<html>
+<head>`)
+	mustContain(t, index, `<div id="index">`)
+}
+
+func TestGenerateTags(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+assets:
+  css:
+    - style.css`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	tmpOut := filepath.Join(tmpProject, "out")
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "zomg.md"), `
+---
+title: zomg is a thing
+tags:
+  - foo
+  - bar
+---
+
+# zomg
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+this is my temp post!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "two.md"), `
+---
+title: my second post
+tags:
+  - bar
+---
+
+# two
+{{ .Timestamp "2018-03-24T12:43:03" }}
+
+wow, so easy!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "tag", "bar.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/zomg.html">zomg is a thing</a>`, tmpOut))
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/two.html">my second post</a>`, tmpOut))
 	mustContain(t, index, `
 <html>
 <head>`)
@@ -209,6 +284,8 @@ assets:`)
 		t.Fatalf("unable to setup temporary working dir")
 	}
 	defer os.RemoveAll(tmpProject)
+
+	tmpOut := filepath.Join(tmpProject, "out")
 
 	err = mkdir(filepath.Join(tmpProject, "src"))
 	if err != nil {
@@ -257,8 +334,8 @@ no title!`)
 		t.Fatalf("unable to read temporary post after parsing")
 	}
 
-	mustContain(t, index, `<a href="one.html">first!</a>`)
-	mustContain(t, index, `<a href="three.html">three</a>`)
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/one.html">first!</a>`, tmpOut))
+	mustContain(t, index, fmt.Sprintf(`<a href="%s/three.html">three</a>`, tmpOut))
 	mustContain(t, index, `
 <html>
 <head>

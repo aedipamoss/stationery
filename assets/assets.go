@@ -9,7 +9,6 @@ import (
 
 // List is a struct containing all the CSS, JavaScript, and Images to be built.
 type List struct {
-	Prefix string
 	CSS    []string
 	JS     []string
 	Images []string
@@ -21,7 +20,7 @@ const Template = `
 {{ define "assets" }}
   {{ if (exists "CSS" .Assets) }}
     {{ range .Assets.CSS }}
-      <link type="text/css" rel="stylesheet" href="{{ $.Assets.Prefix }}css/{{ . }}">
+      <link type="text/css" rel="stylesheet" href="{{ $.Root }}css/{{ . }}">
     {{ end }}
   {{ end }}
 {{ end }}

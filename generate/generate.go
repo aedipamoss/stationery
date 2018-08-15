@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/aedipamoss/stationery/config"
 	"github.com/aedipamoss/stationery/page"
@@ -15,6 +16,23 @@ import (
 )
 
 var cfg config.Config
+
+func rootURI() string {
+	var path string
+	var err error
+
+	if cfg.SiteURL != "" {
+		path = strings.TrimRight(cfg.SiteURL, "/") + "/"
+	} else {
+		path, err = filepath.Abs(cfg.Output)
+		if err != nil {
+			panic(err)
+		}
+		path = strings.TrimRight(path, "/") + "/"
+	}
+
+	return path
+}
 
 // Returns a list of pages sorted by date
 func load(source string) (pages []*page.Page, err error) {
@@ -40,6 +58,7 @@ func load(source string) (pages []*page.Page, err error) {
 		page := &page.Page{}
 		page.Assets = cfg.Assets
 		page.FileInfo = file
+		page.Root = rootURI()
 		page.Template = filepath.Join("layouts", "page.html")
 
 		err := page.Load(cfg.Source, cfg.Output)
@@ -71,7 +90,7 @@ func generateHTML(pages []*page.Page) error {
 func generateRSS(pages []*page.Page) error {
 	feed := feeds.Feed{
 		Title:       cfg.Title,
-		Link:        &feeds.Link{Href: cfg.Link},
+		Link:        &feeds.Link{Href: cfg.SiteURL},
 		Description: cfg.Description,
 		Author:      &feeds.Author{Name: cfg.Name, Email: cfg.Email},
 	}
@@ -79,7 +98,7 @@ func generateRSS(pages []*page.Page) error {
 	for _, page := range pages {
 		feed.Add(&feeds.Item{
 			Title:       page.Title(),
-			Link:        &feeds.Link{Href: page.URL(cfg)},
+			Link:        &feeds.Link{Href: page.URL()},
 			Description: page.Description(),
 			Author:      &feeds.Author{Name: cfg.Name, Email: cfg.Email},
 			Created:     page.Date(),
@@ -100,6 +119,7 @@ func generateRSS(pages []*page.Page) error {
 func generateIndex(pages []*page.Page) error {
 	index := &page.Page{}
 	index.Assets = cfg.Assets
+	index.Root = rootURI()
 	index.Data.Title = cfg.Title
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Template = filepath.Join("layouts", "index.html")
@@ -138,7 +158,7 @@ func generateTags(pages []*page.Page) error {
 	for tag, ps := range tree {
 		p := &page.Page{}
 		p.Assets = cfg.Assets
-		p.Assets.Prefix = "../"
+		p.Root = rootURI()
 		p.Data.Title = cfg.Title
 		p.Destination = filepath.Join(cfg.Output, "tag", fmt.Sprintf("%s.html", tag))
 		p.Template = filepath.Join("layouts", "index.html")
