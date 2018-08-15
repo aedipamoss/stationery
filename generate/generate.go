@@ -18,15 +18,20 @@ import (
 var cfg config.Config
 
 func rootURI() string {
+	var path string
+	var err error
+
 	if cfg.SiteURL != "" {
-		return strings.TrimRight(cfg.SiteURL, "/") + "/"
+		path = strings.TrimRight(cfg.SiteURL, "/") + "/"
 	} else {
-		path, err := filepath.Abs(cfg.Output)
+		path, err = filepath.Abs(cfg.Output)
 		if err != nil {
 			panic(err)
 		}
-		return strings.TrimRight(path, "/") + "/"
+		path = strings.TrimRight(path, "/") + "/"
 	}
+
+	return path
 }
 
 // Returns a list of pages sorted by date
