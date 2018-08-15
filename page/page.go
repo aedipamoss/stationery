@@ -115,7 +115,7 @@ func (page Page) MetaTags() template.HTML {
 	if page.Data.Twitter != "" {
 		str += `<meta name="twitter:card" content="summary" />`
 		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Data.Twitter)
-		str += fmt.Sprintf(`<meta name="twitter:creator" content="@f%s" />`, page.Data.Twitter)
+		str += fmt.Sprintf(`<meta name="twitter:creator" content="@%s" />`, page.Data.Twitter)
 	}
 
 	str += fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL())
