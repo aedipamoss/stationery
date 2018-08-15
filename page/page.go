@@ -53,7 +53,12 @@ func (page Page) Slug() string {
 		return fileutils.Basename(page.FileInfo)
 	}
 
-	return ""
+	stat, err := os.Stat(page.Destination)
+	if err != nil {
+		panic(err)
+	}
+
+	return fileutils.Basename(stat)
 }
 
 // Title is used when printing the index page as the anchor text currently in generate.IndexTemplate.
@@ -62,16 +67,7 @@ func (page Page) Title() string {
 		return page.Data.Title
 	}
 
-	if page.Slug() != "" {
-		return page.Slug()
-	}
-
-	stat, err := os.Stat(page.Destination)
-	if err != nil {
-		panic(err)
-	}
-
-	return fileutils.Basename(stat)
+	return page.Slug()
 }
 
 // Write a bunch of strings to a buffer then return a string
