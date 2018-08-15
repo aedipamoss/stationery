@@ -27,6 +27,7 @@ type Page struct {
 	Content  template.HTML // parsed content into HTML
 	Data     struct {      // extracted meta-data from the file
 		Description string
+		Image       string
 		Title       string
 		Timestamp   string
 		Tags        []string
@@ -37,6 +38,7 @@ type Page struct {
 	Root        string      // parent of this page, usually config.SiteURL
 	Source      string      // path to the original source file
 	Template    string      // template used for this page
+	Twitter     string      // twitter user handle who created this page
 }
 
 // Timestamp is a member function made available in the page template.
@@ -98,6 +100,31 @@ func (page Page) Tags() template.HTML {
 			str += `</span>`
 		}
 	}
+	// nolint: gosec
+	return template.HTML(str)
+}
+
+// MetaTags builds a list of meta tags for the header of a page.
+func (page Page) MetaTags() template.HTML {
+	var str string
+	if page.Data.Description != "" {
+		str += fmt.Sprintf(`<meta name="description" content="%s">`, page.Data.Description)
+		str += fmt.Sprintf(`<meta property="og:description" content="%s" />`, page.Data.Description)
+	}
+
+	if page.Twitter != "" {
+		str += `<meta name="twitter:card" content="summary" />`
+		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Twitter)
+		str += fmt.Sprintf(`<meta name="twitter:creator" content="@f%s" />`, page.Twitter)
+	}
+
+	str += fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL())
+	str += fmt.Sprintf(`<meta property="og:title" content="%s" />`, page.Title())
+
+	if page.Data.Image != "" {
+		str += fmt.Sprintf(`<meta property="og:image" content="%s%s" />`, page.Root, page.Data.Image)
+	}
+
 	// nolint: gosec
 	return template.HTML(str)
 }
