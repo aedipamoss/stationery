@@ -60,6 +60,9 @@ func load(source string) (pages []*page.Page, err error) {
 		page.FileInfo = file
 		page.Root = rootURI()
 		page.Template = filepath.Join("layouts", "page.html")
+		page.Data.Description = cfg.Description
+		page.Data.Image = cfg.Image
+		page.Data.Twitter = cfg.Twitter
 
 		err := page.Load(cfg.Source, cfg.Output)
 		if err != nil {
@@ -121,6 +124,9 @@ func generateIndex(pages []*page.Page) error {
 	index.Assets = cfg.Assets
 	index.Root = rootURI()
 	index.Data.Title = cfg.Title
+	index.Data.Description = cfg.Description
+	index.Data.Image = cfg.Image
+	index.Data.Twitter = cfg.Twitter
 	index.Destination = filepath.Join(cfg.Output, "index.html")
 	index.Template = filepath.Join("layouts", "index.html")
 	index.Children = pages
@@ -160,6 +166,9 @@ func generateTags(pages []*page.Page) error {
 		p.Assets = cfg.Assets
 		p.Root = rootURI()
 		p.Data.Title = cfg.Title
+		p.Data.Description = cfg.Description
+		p.Data.Image = cfg.Image
+		p.Data.Twitter = cfg.Twitter
 		p.Destination = filepath.Join(cfg.Output, "tag", fmt.Sprintf("%s.html", tag))
 		p.Template = filepath.Join("layouts", "index.html")
 		p.Children = ps
