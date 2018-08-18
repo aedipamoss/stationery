@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"time"
 
@@ -72,6 +71,8 @@ func (page Page) Title() string {
 	return page.Slug()
 }
 
+// FIXME(ae): These general string helpers
+
 // Write a bunch of strings to a buffer then return a string
 func toString(strs ...string) string {
 	var buf bytes.Buffer
@@ -87,50 +88,118 @@ func toString(strs ...string) string {
 	return buf.String()
 }
 
+func newline() string {
+	return "\n\t"
+}
+
 // Tags will build a list of tags and their links in an HTML safe way.
 func (page Page) Tags() template.HTML {
 	var str string
 	if len(page.Data.Tags) > 0 {
 		str += "<br>"
 		for _, tag := range page.Data.Tags {
-			str += `<span class="tag">#`
-			str += fmt.Sprintf(`<a href="%stag/%s.html">`, page.Root, tag)
-			str += tag
-			str += `</a>`
-			str += `</span>`
+			str += toString(
+				`<span class="tag">#`,
+				fmt.Sprintf(`<a href="%stag/%s.html">`, page.Root, tag),
+				tag,
+				`</a>`,
+				`</span>`,
+			)
 		}
 	}
 	// nolint: gosec
 	return template.HTML(str)
 }
 
+// Headers combines title, meta-tags, and assets into a single function.
+func (page Page) Headers() template.HTML {
+	str := toString(
+		`<title>`,
+		page.Title(),
+		`</title>`,
+		newline(),
+		`<meta charset="utf-8">`,
+		newline(),
+		page.MetaTags(),
+		page.AssetTags(),
+	)
+
+	// nolint: gosec
+	return template.HTML(str)
+}
+
 // MetaTags builds a list of meta tags for the header of a page.
-func (page Page) MetaTags() template.HTML {
+func (page Page) MetaTags() string {
 	var str string
 	if page.Data.Description != "" {
-		str += fmt.Sprintf(`<meta name="description" content="%s">`, page.Data.Description)
-		str += fmt.Sprintf(`<meta property="og:description" content="%s" />`, page.Data.Description)
+		str += toString(
+			fmt.Sprintf(`<meta name="description" content="%s" />`, page.Data.Description),
+			newline(),
+			fmt.Sprintf(`<meta property="og:description" content="%s" />`, page.Data.Description),
+			newline(),
+		)
 	}
 
 	if page.Data.Twitter != "" {
-		str += `<meta name="twitter:card" content="summary" />`
-		str += fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Data.Twitter)
-		str += fmt.Sprintf(`<meta name="twitter:creator" content="@%s" />`, page.Data.Twitter)
+		str += toString(`<meta name="twitter:card" content="summary" />`,
+			newline(),
+			fmt.Sprintf(`<meta name="twitter:site" content="@%s" />`, page.Data.Twitter),
+			newline(),
+			fmt.Sprintf(`<meta name="twitter:creator" content="@%s" />`, page.Data.Twitter),
+			newline(),
+		)
 	}
 
-	str += fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL())
-	str += fmt.Sprintf(`<meta property="og:title" content="%s" />`, page.Title())
+	str += toString(
+		fmt.Sprintf(`<meta property="og:url" content="%s" />`, page.URL()),
+		newline(),
+		fmt.Sprintf(`<meta property="og:title" content="%s" />`, page.Title()),
+		newline(),
+	)
 
 	if page.Data.Image != "" {
 		str += fmt.Sprintf(`<meta property="og:image" content="%s%s" />`, page.Root, page.Data.Image)
+		str += newline()
+	}
+
+	return str
+}
+
+// AssetTags returns meta tags for all assets from the project config
+func (page Page) AssetTags() string {
+	var str string
+	if page.Assets != nil && len(page.Assets.CSS) > 0 {
+		for _, stylesheet := range page.Assets.CSS {
+			str += fmt.Sprintf(`<link type="text/css" rel="stylesheet" href="%scss/%s">`, page.Root, stylesheet)
+			str += newline()
+		}
+	}
+
+	return str
+}
+
+// Index builds a list of children and links to their pages
+func (page Page) Index() template.HTML {
+	var str string
+	if len(page.Children) > 0 {
+		str += `<ul>`
+		str += newline()
+		for _, child := range page.Children {
+			str += `<li>`
+			str += child.Link()
+			str += `</li>`
+			str += newline()
+		}
+		str += `</ul>`
+		str += newline()
 	}
 
 	// nolint: gosec
 	return template.HTML(str)
 }
 
-// Link is used when printing a page's link inside generate.IndexTemplate
-func (page Page) Link() template.HTML {
+// Link is used when printing a page's link inside page.Index()
+func (page Page) Link() string {
 	str := toString(
 		fmt.Sprintf(`<a href="%s%s.html">`, page.Root, page.Slug()),
 		page.Title(),
@@ -142,8 +211,7 @@ func (page Page) Link() template.HTML {
 
 	str += string(page.Tags())
 
-	// nolint: gosec
-	return template.HTML(str)
+	return str
 }
 
 // URL is used when generating the rss feed for the site.
@@ -326,7 +394,7 @@ func (page *Page) createDestination() (*bufio.Writer, error) {
 	return bufio.NewWriter(f), err
 }
 
-// Parse the page template along with assets and return a template ready for execution.
+// Parse the page template to be ready for execution.
 // This function is called directly in Generate().
 func (page *Page) parseTemplate() (*template.Template, error) {
 	tmpl, err := ioutil.ReadFile(page.Template)
@@ -335,22 +403,7 @@ func (page *Page) parseTemplate() (*template.Template, error) {
 	}
 
 	t, err := template.New("page").Parse(string(tmpl))
-	if err != nil {
-		return t, err
-	}
-	t.Funcs(template.FuncMap{
-		"exists": func(name string, data interface{}) bool {
-			v := reflect.ValueOf(data)
-			if v.Kind() == reflect.Ptr {
-				v = v.Elem()
-			}
-			if v.Kind() != reflect.Struct {
-				return false
-			}
-			return v.FieldByName(name).IsValid()
-		},
-	})
-	t, err = t.Parse(assets.Template)
+
 	return t, err
 }
 
