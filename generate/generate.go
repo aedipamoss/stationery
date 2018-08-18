@@ -187,6 +187,9 @@ func generateTags(pages []*page.Page) error {
 
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
+//
+// I realize this function is complex, it's the main function!
+// nolint: gocyclo
 func Run() {
 	preview := flag.Bool("preview", false, "Preview changes locally")
 	flag.Parse()
