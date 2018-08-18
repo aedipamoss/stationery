@@ -397,8 +397,7 @@ func tmpProjectSetup(tmpConfig string) (string, error) {
 	tmpPageTemplate := `
 <html>
 <head>
-<title>{{ .Title }}</title>
-{{ template "assets" . }}
+{{ .Headers }}
 </head>
 <body>
   {{ .Content }}
@@ -415,8 +414,7 @@ html {
 	tmpIndexTemplate := `
 <html>
 <head>
-<title>{{ .Title }}</title>
-{{ template "assets" . }}
+{{ .Headers }}
 </head>
 <body>
   <div id="index">
