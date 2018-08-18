@@ -21,6 +21,9 @@ type Config struct {
 	Description string
 	Name        string
 	Email       string
+	// Twitter fields
+	Twitter string
+	Image   string
 }
 
 // ConfigFile is the default name for configuration file used by stationery.

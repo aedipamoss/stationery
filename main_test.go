@@ -349,6 +349,186 @@ no title!`)
 	mustContain(t, page, `<title>three</title>`)
 }
 
+func TestConfigIndexMetaData(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+title: my blog
+description: my default description
+twitter: aedipamoss
+image: images/avatar.jpg`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	tmpOut := filepath.Join(tmpProject, "out")
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "config.md"), `
+---
+title: config inherited defaults!
+tags:
+  - mytag
+---
+
+this is config!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	index, err := readTmpPost(filepath.Join(tmpProject, "out", "index.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, index, fmt.Sprintf(`<meta name="description" content="%s" />`, "my default description"))
+	mustContain(t, index, fmt.Sprintf(`<meta property="og:description" content="%s" />`, "my default description"))
+	mustContain(t, index, fmt.Sprintf(`<meta property="og:title" content="%s" />`, "my blog"))
+	mustContain(t, index, fmt.Sprintf(`<meta property="og:image" content="%s" />`, filepath.Join(tmpOut, "images", "avatar.jpg")))
+	mustContain(t, index, `<meta name="twitter:card" content="summary" />`)
+	mustContain(t, index, `<meta name="twitter:creator" content="@aedipamoss" />`)
+	mustContain(t, index, `<meta name="twitter:site" content="@aedipamoss" />`)
+
+	tag, err := readTmpPost(filepath.Join(tmpProject, "out", "tag", "mytag.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, tag, fmt.Sprintf(`<meta property="og:title" content="%s" />`, "my blog"))
+	mustContain(t, tag, fmt.Sprintf(`<meta property="og:image" content="%s" />`, filepath.Join(tmpOut, "images", "avatar.jpg")))
+	mustContain(t, tag, `<meta name="twitter:card" content="summary" />`)
+	mustContain(t, tag, `<meta name="twitter:creator" content="@aedipamoss" />`)
+	mustContain(t, tag, `<meta name="twitter:site" content="@aedipamoss" />`)
+}
+
+func TestPageMetaData(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+title: my blog
+description: my default description
+twitter: aedipamoss
+image: images/avatar.jpg`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	tmpOut := filepath.Join(tmpProject, "out")
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "config.md"), `
+---
+title: config inherited defaults!
+tags:
+  - mytag
+---
+
+this is config!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	config, err := readTmpPost(filepath.Join(tmpProject, "out", "config.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, config, fmt.Sprintf(`<meta name="description" content="%s" />`, "my default description"))
+	mustContain(t, config, fmt.Sprintf(`<meta property="og:description" content="%s" />`, "my default description"))
+	mustContain(t, config, fmt.Sprintf(`<meta property="og:title" content="%s" />`, "config inherited defaults!"))
+	mustContain(t, config, fmt.Sprintf(`<meta property="og:image" content="%s" />`, filepath.Join(tmpOut, "images", "avatar.jpg")))
+	mustContain(t, config, `<meta name="twitter:card" content="summary" />`)
+	mustContain(t, config, `<meta name="twitter:creator" content="@aedipamoss" />`)
+	mustContain(t, config, `<meta name="twitter:site" content="@aedipamoss" />`)
+}
+
+func TestOverideMetaData(t *testing.T) {
+	if os.Getenv("BE_STATIONERY") == "1" {
+		main()
+		return
+	}
+
+	tmpProject, err := tmpProjectSetup(`
+source: src
+output: out
+title: my blog
+description: my default description
+twitter: aedipamoss
+image: images/avatar.jpg`)
+	if err != nil {
+		t.Fatalf("unable to setup temporary working dir")
+	}
+	defer os.RemoveAll(tmpProject)
+
+	tmpOut := filepath.Join(tmpProject, "out")
+
+	err = mkdir(filepath.Join(tmpProject, "src"))
+	if err != nil {
+		t.Fatalf("unable to setup temp project src dir")
+	}
+
+	err = tmpPostSetup(filepath.Join(tmpProject, "src", "overide.md"), `
+---
+title: config overridden!
+twitter: forgetme
+image: images/zomg.jpg
+description: description overridden!
+---
+
+this is overridden!`)
+	if err != nil {
+		t.Fatalf("unable to create temporary post")
+	}
+
+	err = execCommandWithProject(tmpProject)
+	if err != nil {
+		t.Fatalf("command finished with error %v", err)
+	}
+
+	overridden, err := readTmpPost(filepath.Join(tmpProject, "out", "overide.html"))
+	if err != nil {
+		t.Fatalf("unable to read temporary post after parsing")
+	}
+
+	mustContain(t, overridden, fmt.Sprintf(`<meta name="description" content="%s" />`, "description overridden!"))
+	mustContain(t, overridden, fmt.Sprintf(`<meta property="og:description" content="%s" />`, "description overridden!"))
+	mustContain(t, overridden, fmt.Sprintf(`<meta property="og:title" content="%s" />`, "config overridden!"))
+	mustContain(t, overridden, fmt.Sprintf(`<meta property="og:image" content="%s" />`, filepath.Join(tmpOut, "images", "zomg.jpg")))
+	mustContain(t, overridden, `<meta name="twitter:card" content="summary" />`)
+	mustContain(t, overridden, `<meta name="twitter:creator" content="@forgetme" />`)
+	mustContain(t, overridden, `<meta name="twitter:site" content="@forgetme" />`)
+}
+
 func mustContain(t *testing.T, page string, expected string) {
 	if !strings.Contains(page, expected) {
 		t.Errorf("content = %q, expected %s", page, expected)
