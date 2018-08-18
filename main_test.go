@@ -418,11 +418,7 @@ html {
 </head>
 <body>
   <div id="index">
-    <ul>
-      {{ range .Children }}
-        <li>{{ .Link }}</li>
-      {{ end }}
-    </ul>
+    {{ .Index }}
   </div>
 </body>
 </html>

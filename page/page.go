@@ -178,8 +178,28 @@ func (page Page) AssetTags() string {
 	return str
 }
 
-// Link is used when printing a page's link inside generate.IndexTemplate
-func (page Page) Link() template.HTML {
+// Index builds a list of children and links to their pages
+func (page Page) Index() template.HTML {
+	var str string
+	if len(page.Children) > 0 {
+		str += `<ul>`
+		str += newline()
+		for _, child := range page.Children {
+			str += `<li>`
+			str += child.Link()
+			str += `</li>`
+			str += newline()
+		}
+		str += `</ul>`
+		str += newline()
+	}
+
+	// nolint: gosec
+	return template.HTML(str)
+}
+
+// Link is used when printing a page's link inside page.Index()
+func (page Page) Link() string {
 	str := toString(
 		fmt.Sprintf(`<a href="%s%s.html">`, page.Root, page.Slug()),
 		page.Title(),
@@ -191,8 +211,7 @@ func (page Page) Link() template.HTML {
 
 	str += string(page.Tags())
 
-	// nolint: gosec
-	return template.HTML(str)
+	return str
 }
 
 // URL is used when generating the rss feed for the site.
