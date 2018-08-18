@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -187,11 +188,18 @@ func generateTags(pages []*page.Page) error {
 // Run is the main entrypoint to this program.
 // It's caller is main() and logs any errors that occur during file generation.
 func Run() {
+	preview := flag.Bool("preview", false, "Preview changes locally")
+	flag.Parse()
+
 	loaded, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
 	cfg = loaded
+
+	if *preview {
+		cfg.SiteURL = ""
+	}
 
 	err = os.MkdirAll(cfg.Output, 0700)
 	if err != nil {
